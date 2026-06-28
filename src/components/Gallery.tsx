@@ -78,11 +78,13 @@ export default function Gallery({ photos }: GalleryProps) {
   };
 
   return (
-    <div className="relative w-full overflow-hidden py-16 flex flex-col items-center" style={{ minHeight: 560 }}>
+    <div className="relative w-full overflow-hidden py-16 flex flex-col items-center" style={{ minHeight: 580 }}>
       <AmbientBackground />
 
       <div
-        className="relative w-[300px] h-[420px] perspective-1000 cursor-pointer select-none"
+        className="relative w-[280px] sm:w-[300px] cursor-pointer select-none"
+        // altura dinámica: imagen cuadrada (280/300px) + padding polaroid + caption
+        style={{ height: 420 }}
         onClick={handleNext}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -109,11 +111,11 @@ export default function Gallery({ photos }: GalleryProps) {
             zIndex = 30;
             opacity = swipeDir === 'left' ? 0 : 1;
           } else if (isNext) {
-            transform = 'translateY(12px) rotate(3.5deg) scale(0.95)';
+            transform = 'translateY(10px) rotate(3.5deg) scale(0.96)';
             zIndex = 20;
             opacity = 0.85;
           } else {
-            transform = 'translateY(24px) rotate(-2deg) scale(0.9)';
+            transform = 'translateY(20px) rotate(-2deg) scale(0.91)';
             zIndex = 10;
             opacity = 0.5;
           }
@@ -121,24 +123,33 @@ export default function Gallery({ photos }: GalleryProps) {
           return (
             <div
               key={photo.url}
-              className="absolute inset-0 bg-[#FFFDFD] p-4 pb-10 rounded-sm shadow-2xl"
+              className="absolute inset-0 bg-[#FFFDFD] rounded-sm shadow-2xl"
               style={{
                 transform, zIndex, opacity,
+                padding: '14px',
+                paddingBottom: '52px',
                 transition: 'transform 0.55s cubic-bezier(0.23,1,0.32,1), opacity 0.55s ease',
               }}
             >
-              <div className="w-full h-[280px] overflow-hidden bg-[#130D0F] relative">
+              {/*
+                Imagen perfectamente cuadrada: usamos un wrapper con padding-top 100%
+                y position absolute para que SIEMPRE sea cuadrada sin importar
+                las dimensiones originales de la foto.
+              */}
+              <div className="relative w-full" style={{ paddingTop: '100%' }}>
                 <img
                   src={photo.url}
                   alt={photo.displayName}
-                  className="object-cover w-full h-full pointer-events-none transition-all duration-700 grayscale-[10%]"
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  style={{ filter: 'grayscale(8%)', objectPosition: photo.objectPosition ?? 'center center' }}
                   loading="lazy"
                   draggable={false}
                 />
-                <div className="absolute inset-0 bg-[#3B1F27]/12 mix-blend-multiply" />
+                <div className="absolute inset-0 bg-[#3B1F27] opacity-[0.06] mix-blend-multiply pointer-events-none" />
               </div>
-              <div className="mt-5 text-center px-2">
-                <p className="italic text-sm text-[#28191E] font-serif leading-relaxed">
+
+              <div className="mt-4 text-center px-1">
+                <p className="italic text-xs text-[#28191E] font-serif leading-snug line-clamp-2">
                   "{photo.caption}"
                 </p>
               </div>
@@ -148,7 +159,7 @@ export default function Gallery({ photos }: GalleryProps) {
       </div>
 
       {/* Dots de navegación */}
-      <div className="relative z-10 flex gap-1.5 mt-8">
+      <div className="relative z-10 flex flex-wrap justify-center gap-1.5 mt-6 max-w-xs">
         {photos.map((_, i) => (
           <button
             key={i}
@@ -163,7 +174,7 @@ export default function Gallery({ photos }: GalleryProps) {
         ))}
       </div>
 
-      <p className="relative z-10 text-[10px] font-mono tracking-widest text-[#62464D] mt-4 uppercase">
+      <p className="relative z-10 text-[10px] font-mono tracking-widest text-[#62464D] mt-3 uppercase">
         {currentIndex + 1} / {photos.length} — Toca para el siguiente instante
       </p>
     </div>

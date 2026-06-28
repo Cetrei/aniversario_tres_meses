@@ -17,6 +17,7 @@ function getSmileMessage(level: number): string {
 
 const TICK_POSITIONS = [0, 20, 45, 75, 100];
 
+// ─── Onda SVG via rAF directo sobre refs ─────────────────────
 function PeacefulWave({ smileLevel }: { smileLevel: number }) {
   const offsetRef = useRef(0);
   const pathMainRef = useRef<SVGPathElement>(null);
@@ -32,9 +33,6 @@ function PeacefulWave({ smileLevel }: { smileLevel: number }) {
     const loop = () => {
       const level = smileRef.current;
       const t = level / 100;
-
-      // smileLevel=0: rápida, caótica, agitada
-      // smileLevel=100: lenta, amplia, pacífica
       const frequency = 0.055 - t * 0.038;
       const amplitude = 32 - t * 18;
       const noiseAmp = (1 - t) * 14;
@@ -101,27 +99,36 @@ function PeacefulWave({ smileLevel }: { smileLevel: number }) {
   );
 }
 
+// ─── Componente principal ─────────────────────────────────────
 export default function SmileSlider() {
-  // Estado inicial estrictamente 0 — extrema izquierda
   const [smileLevel, setSmileLevel] = useState(0);
   const message = getSmileMessage(smileLevel);
+
+  // El fill del slider sigue al thumb sin delay
+  const fillStyle = {
+    width: `${smileLevel}%`,
+  };
 
   return (
     <div className="w-full mt-16 space-y-12">
       <div className="space-y-4 max-w-md mx-auto relative">
         <div className="relative w-full h-8 flex items-center">
+          {/* Track base */}
           <div className="absolute w-full h-[2px] bg-[#2D1C22] rounded-full" />
+          {/* Fill sin transition — sigue instantáneamente */}
           <div
-            className="absolute h-[2px] bg-gradient-to-r from-[#62464D] to-[#E8A598] rounded-full transition-all duration-100"
-            style={{ width: `${smileLevel}%` }}
+            className="absolute h-[2px] bg-gradient-to-r from-[#62464D] to-[#E8A598] rounded-full pointer-events-none"
+            style={fillStyle}
           />
+          {/* Ticks */}
           {TICK_POSITIONS.map((pos) => (
             <div
               key={pos}
-              className="absolute w-[1px] h-[8px] bg-[#3C282D] rounded-full"
+              className="absolute w-[1px] h-[8px] bg-[#3C282D] rounded-full pointer-events-none"
               style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}
             />
           ))}
+          {/* Input range encima de todo */}
           <input
             type="range"
             min={0}
@@ -129,8 +136,8 @@ export default function SmileSlider() {
             step={1}
             value={smileLevel}
             onChange={(e) => setSmileLevel(Number(e.target.value))}
-            className="slider-custom absolute w-full"
-            aria-label="Nivel de la sonrisa de Sofía"
+            className="slider-custom absolute w-full z-10"
+            aria-label="Nivel de la sonrisa"
           />
         </div>
         <div className="flex justify-between text-[9px] font-mono text-[#8C7565] tracking-widest">

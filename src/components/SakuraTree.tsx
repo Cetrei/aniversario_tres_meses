@@ -1,257 +1,288 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 interface SakuraTreeProps {
-  anniversaryDate: string;
+  anniversaryDate: string; // ISO string
 }
 
-interface CounterState {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
+interface BranchData {
+  x1: number; y1: number;
+  x2: number; y2: number;
+  cpx: number; cpy: number; // control point for quadratic curve
+  width: number;
+  depth: number;
 }
 
-function calculateCounter(dateStr: string): CounterState {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-  const totalSeconds = Math.floor(diff / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return { days, hours, minutes, seconds };
+interface FlowerData {
+  x: number; y: number;
+  r: number;
+  opacity: number;
+  phase: number;
+  speed: number;
 }
 
-function drawSakuraTree(
-  ctx: CanvasRenderingContext2D,
-  canvasW: number,
-  canvasH: number,
-  days: number,
-  windPhase: number
-) {
-  ctx.clearRect(0, 0, canvasW, canvasH);
+function useCountup(anniversaryDate: string) {
+  const calc = () => {
+    const diff = Date.now() - new Date(anniversaryDate).getTime();
+    const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+    return {
+      days: Math.floor(totalSeconds / 86400),
+      hours: Math.floor((totalSeconds % 86400) / 3600),
+      minutes: Math.floor((totalSeconds % 3600) / 60),
+      seconds: totalSeconds % 60,
+      totalHours: Math.floor(totalSeconds / 3600),
+    };
+  };
+  const [elapsed, setElapsed] = useState(calc);
+  useEffect(() => {
+    const id = setInterval(() => setElapsed(calc()), 1000);
+    return () => clearInterval(id);
+  }, [anniversaryDate]);
+  return elapsed;
+}
 
-  const maxDepth = days < 30 ? 5 : days < 60 ? 6 : 7;
-  const trunkLen = canvasH * 0.28;
-  const startX = canvasW / 2;
-  const startY = canvasH;
+// Seeded pseudo-random for deterministic jitter (same tree every render)
+function seededRand(seed: number) {
+  const x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
+}
 
-  // Medir bounding box para escalado dinámico
-  let minX = Infinity, maxX = -Infinity, minY = Infinity;
+function buildTree(
+  cx: number,
+  baseY: number,
+  trunkLen: number,
+  trunkWidth: number
+): { branches: BranchData[]; tips: Array<{ x: number; y: number }> } {
+  const branches: BranchData[] = [];
+  const tips: Array<{ x: number; y: number }> = [];
+  let seed = 0;
 
-  function measureBranch(x: number, y: number, len: number, angleDeg: number, depth: number) {
-    if (depth === 0 || len < 2) return;
-    const angleRad = (angleDeg * Math.PI) / 180;
-    const nx = x + Math.sin(angleRad) * len;
-    const ny = y - Math.cos(angleRad) * len;
-    if (nx < minX) minX = nx;
-    if (nx > maxX) maxX = nx;
-    if (ny < minY) minY = ny;
-    const spread = 22 + depth * 2;
-    const windOffset = depth > 2 ? Math.sin(windPhase) * 3 * (depth - 2) : 0;
-    measureBranch(nx, ny, len * 0.68, angleDeg - spread + windOffset, depth - 1);
-    measureBranch(nx, ny, len * 0.68, angleDeg + spread + windOffset, depth - 1);
-    if (depth === maxDepth - 1) {
-      measureBranch(nx, ny, len * 0.55, angleDeg + windOffset, depth - 1);
+  function grow(
+    x: number, y: number,
+    angle: number, length: number,
+    width: number, depth: number
+  ) {
+    if (depth > 9 || length < 5) {
+      tips.push({ x, y });
+      return;
+    }
+
+    const rad = (angle * Math.PI) / 180;
+    const x2 = x + Math.cos(rad) * length;
+    const y2 = y - Math.sin(rad) * length;
+
+    // Control point: organic lateral bow
+    const jitter = (seededRand(seed++) - 0.5) * width * 2.5;
+    const cpx = (x + x2) / 2 + jitter;
+    const cpy = (y + y2) / 2 + (seededRand(seed++) - 0.5) * width;
+
+    branches.push({ x1: x, y1: y, x2, y2, cpx, cpy, width, depth });
+
+    if (depth >= 6) {
+      // Terminal — record tip
+      tips.push({ x: x2, y: y2 });
+    }
+
+    const spread = 20 + depth * 2.5;
+    const lenRatio = 0.67 - depth * 0.008;
+    const wRatio = 0.60;
+
+    grow(x2, y2, angle - spread, length * lenRatio, width * wRatio, depth + 1);
+    grow(x2, y2, angle + spread, length * lenRatio, width * wRatio, depth + 1);
+
+    // Extra mid branch for fuller canopy
+    if (depth < 4) {
+      const lateralAngle = angle + (seededRand(seed++) - 0.5) * 15;
+      grow(x2, y2, lateralAngle, length * lenRatio * 0.8, width * wRatio * 0.75, depth + 2);
     }
   }
 
-  measureBranch(startX, startY, trunkLen, 0, maxDepth);
-
-  const treeWidth = maxX - minX;
-  const treeHeight = startY - minY;
-  const scaleX = treeWidth > 0 ? (canvasW * 0.88) / treeWidth : 1;
-  const scaleY = treeHeight > 0 ? (canvasH * 0.88) / treeHeight : 1;
-  const scale = Math.min(scaleX, scaleY, 1.0);
-  const offsetX = startX - ((minX + maxX) / 2) * scale + (canvasW / 2) * (1 - scale);
-
-  ctx.save();
-  ctx.transform(scale, 0, 0, scale, offsetX * (1 - scale), startY * (1 - scale));
-
-  function drawBranch(x: number, y: number, len: number, angleDeg: number, depth: number, parentWidth: number) {
-    if (depth === 0 || len < 1.5) return;
-
-    const angleRad = (angleDeg * Math.PI) / 180;
-    const nx = x + Math.sin(angleRad) * len;
-    const ny = y - Math.cos(angleRad) * len;
-    const branchWidth = Math.max(parentWidth * 0.68, 0.8);
-
-    const warmth = 1 - depth / maxDepth;
-    const r = Math.round(120 + warmth * 40);
-    const g = Math.round(90 + warmth * 30);
-    const b = Math.round(70 + warmth * 20);
-
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(nx, ny);
-    ctx.strokeStyle = `rgb(${r},${g},${b})`;
-    ctx.lineWidth = branchWidth;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-
-    // Flores en las últimas 3 capas — densidad alta para centro frondoso
-    if (depth <= 3) {
-      const blossomCount = depth === 1 ? 7 : depth === 2 ? 5 : 3;
-      const spreadRadius = len * (depth === 1 ? 1.4 : 0.9);
-      const palettes = [
-        'rgba(240,180,175,',
-        'rgba(232,165,152,',
-        'rgba(255,200,195,',
-        'rgba(244,63,94,',
-        'rgba(255,220,215,',
-      ];
-
-      for (let i = 0; i < blossomCount; i++) {
-        const angle = (i / blossomCount) * Math.PI * 2 + windPhase * 0.3;
-        const dist = spreadRadius * (0.5 + Math.random() * 0.5);
-        const bx = nx + Math.cos(angle) * dist;
-        const by = ny + Math.sin(angle) * dist * 0.6;
-        const size = depth === 1 ? 3.5 + Math.random() * 3 : 2.5 + Math.random() * 2;
-        const alpha = 0.55 + Math.random() * 0.45;
-
-        ctx.beginPath();
-        ctx.arc(bx, by, size, 0, Math.PI * 2);
-        ctx.fillStyle = palettes[i % palettes.length] + alpha + ')';
-        ctx.fill();
-
-        // Pétalos de relleno para el corazón del árbol
-        if (depth <= 2 && i % 2 === 0) {
-          const ibx = nx + Math.cos(angle + 0.5) * dist * 0.4;
-          const iby = ny + Math.sin(angle + 0.5) * dist * 0.4 * 0.6;
-          ctx.beginPath();
-          ctx.arc(ibx, iby, size * 0.6, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,210,205,${alpha * 0.7})`;
-          ctx.fill();
-        }
-      }
-    }
-
-    const spread = 22 + depth * 2;
-    // Viento elegante: solo afecta ramas finas, continuo y sin saltos
-    const windStrength = depth < 3 ? Math.sin(windPhase) * 2.5 * (3 - depth) : 0;
-
-    drawBranch(nx, ny, len * 0.68, angleDeg - spread + windStrength, depth - 1, branchWidth);
-    drawBranch(nx, ny, len * 0.68, angleDeg + spread + windStrength, depth - 1, branchWidth);
-
-    if (depth === maxDepth - 1) {
-      drawBranch(nx, ny, len * 0.55, angleDeg + windStrength * 0.5, depth - 1, branchWidth * 0.7);
-    }
-    if (depth === maxDepth - 2 && days > 45) {
-      drawBranch(nx, ny, len * 0.45, angleDeg - 8 + windStrength, depth - 1, branchWidth * 0.6);
-    }
-  }
-
-  drawBranch(startX, startY, trunkLen, 0, maxDepth, 12);
-
-  // Partículas de pétalos flotando
-  const petalCount = Math.min(20, Math.floor(days / 3) + 8);
-  for (let i = 0; i < petalCount; i++) {
-    const phase = windPhase + (i * 137.5 * Math.PI) / 180;
-    const px = canvasW * 0.1 + ((Math.sin(phase * 0.7 + i) * 0.5 + 0.5) * canvasW * 0.8);
-    const py = (windPhase * 0.4 + i * (canvasH / petalCount)) % canvasH;
-    const alpha = 0.2 + Math.sin(phase) * 0.2;
-    ctx.beginPath();
-    ctx.arc(px, py, 1.5 + Math.sin(i) * 1, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(232,165,152,${Math.max(0.05, alpha)})`;
-    ctx.fill();
-  }
-
-  ctx.restore();
+  grow(cx, baseY, 90, trunkLen, trunkWidth, 0);
+  return { branches, tips };
 }
 
 export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
+  const { days, hours, minutes, seconds, totalHours } = useCountup(anniversaryDate);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [counter, setCounter] = useState<CounterState>(() => calculateCounter(anniversaryDate));
   const animRef = useRef<number>(0);
-  const windRef = useRef<number>(0);
-  const counterRef = useRef<CounterState>(counter);
-
-  useEffect(() => {
-    const tick = () => {
-      const next = calculateCounter(anniversaryDate);
-      counterRef.current = next;
-      setCounter(next);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [anniversaryDate]);
+  const stateRef = useRef<{
+    branches: BranchData[];
+    flowers: FlowerData[];
+    initialized: boolean;
+  }>({ branches: [], flowers: [], initialized: false });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
 
-    const resizeCanvas = () => {
+    // ── Resize ──────────────────────────────────────────────
+    const resize = () => {
       const parent = canvas.parentElement;
-      if (!parent) return;
-      const dpr = window.devicePixelRatio || 1;
-      const w = parent.clientWidth;
-      const h = Math.min(w * 0.85, 480);
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      ctx.scale(dpr, dpr);
+      const size = Math.min(parent?.clientWidth ?? 420, 500);
+      if (canvas.width !== size || canvas.height !== size) {
+        canvas.width = size;
+        canvas.height = size;
+        stateRef.current.initialized = false; // rebuild on size change
+      }
     };
-
-    resizeCanvas();
-    const ro = new ResizeObserver(resizeCanvas);
+    resize();
+    const ro = new ResizeObserver(resize);
     if (canvas.parentElement) ro.observe(canvas.parentElement);
 
-    const loop = () => {
-      windRef.current += 0.008; // Viento muy lento y continuo
-      const { days } = counterRef.current;
-      const cssW = parseInt(canvas.style.width || '600');
-      const cssH = parseInt(canvas.style.height || '400');
-      if (days > 0) {
-        drawSakuraTree(ctx, cssW, cssH, days, windRef.current);
+    // ── Animation loop ───────────────────────────────────────
+    let t = 0;
+
+    const draw = () => {
+      const c = canvasRef.current;
+      if (!c) return;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+
+      const W = c.width;
+      const H = c.height;
+      const cx = W / 2;
+      const baseY = H * 0.94;
+      const trunkLen = H * 0.26;
+      const trunkWidth = W * 0.022;
+
+      // Build geometry once (or after resize)
+      if (!stateRef.current.initialized) {
+        const { branches, tips } = buildTree(cx, baseY, trunkLen, trunkWidth);
+        stateRef.current.branches = branches;
+
+        // Shuffle tips deterministically so first N are spread across canopy
+        const shuffled = [...tips];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(seededRand(i * 7 + 3) * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        const count = Math.min(totalHours, shuffled.length * 4); // each tip hosts ~4 flowers
+        stateRef.current.flowers = Array.from({ length: Math.min(count, shuffled.length * 4) }, (_, i) => {
+          const tip = shuffled[i % shuffled.length];
+          const scatter = 18;
+          return {
+            x: tip.x + (seededRand(i * 3 + 1) - 0.5) * scatter,
+            y: tip.y + (seededRand(i * 3 + 2) - 0.5) * scatter,
+            r: 5 + seededRand(i * 3 + 3) * 9,
+            opacity: 0.55 + seededRand(i * 5) * 0.45,
+            phase: seededRand(i * 7) * Math.PI * 2,
+            speed: 0.3 + seededRand(i * 11) * 0.5,
+          };
+        });
+
+        stateRef.current.initialized = true;
       }
-      animRef.current = requestAnimationFrame(loop);
+
+      t += 0.016;
+      ctx.clearRect(0, 0, W, H);
+
+      const { branches, flowers } = stateRef.current;
+
+      // ── Draw branches — sorted so trunk draws last (on top) ──
+      const sorted = [...branches].sort((a, b) => b.depth - a.depth);
+      for (const b of sorted) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(b.x1, b.y1);
+        ctx.quadraticCurveTo(b.cpx, b.cpy, b.x2, b.y2);
+
+        // Warm bark color, slightly lighter at tips
+        const depthRatio = b.depth / 9;
+        const r = Math.round(110 + depthRatio * 30);
+        const g = Math.round(82 + depthRatio * 20);
+        const bv = Math.round(45 + depthRatio * 15);
+        ctx.strokeStyle = `rgb(${r},${g},${bv})`;
+        ctx.lineWidth = b.width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ── Draw flowers with gentle sway ───────────────────────
+      for (const f of flowers) {
+        const sway = Math.sin(t * f.speed + f.phase) * 1.8;
+        const bob = Math.cos(t * f.speed * 0.6 + f.phase) * 1.2;
+        const fx = f.x + sway;
+        const fy = f.y + bob;
+
+        ctx.save();
+        ctx.globalAlpha = f.opacity;
+
+        const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, f.r);
+        grad.addColorStop(0, "rgba(255, 215, 225, 1)");
+        grad.addColorStop(0.45, "rgba(255, 185, 205, 0.85)");
+        grad.addColorStop(1, "rgba(255, 160, 190, 0)");
+
+        ctx.beginPath();
+        ctx.arc(fx, fy, f.r, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Center highlight
+        ctx.beginPath();
+        ctx.arc(fx, fy, f.r * 0.22, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 240, 245, 0.95)";
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      animRef.current = requestAnimationFrame(draw);
     };
-    animRef.current = requestAnimationFrame(loop);
+
+    animRef.current = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(animRef.current);
       ro.disconnect();
     };
-  }, []);
+  }, [totalHours]);
 
-  const pad = (n: number) => String(n).padStart(2, '0');
+  // Rebuild flowers when totalHours changes (new hour ticks)
+  useEffect(() => {
+    stateRef.current.initialized = false;
+  }, [totalHours]);
+
+  const poeticLabel =
+    totalHours === 0
+      ? "el primer momento"
+      : totalHours === 1
+      ? "una hora, una flor"
+      : `${totalHours.toLocaleString()} flores — una por cada hora juntos`;
 
   return (
-    <div className="w-full flex flex-col items-center gap-8">
-      <div className="w-full max-w-2xl mx-auto">
-        <canvas
-          ref={canvasRef}
-          className="w-full block"
-          aria-label="Árbol de sakura que crece con el tiempo juntos"
-        />
-      </div>
+    <div className="flex flex-col items-center gap-8 w-full">
+      {/* Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="w-full max-w-[500px] aspect-square"
+        aria-label="Árbol de sakura — flores que crecen con el tiempo"
+      />
 
-      {/* Contador fuera del canvas */}
-      <div className="flex flex-wrap justify-center gap-6 sm:gap-10">
+      {/* Poetic label */}
+      <p className="text-xs text-[#8C7565] italic tracking-wide text-center px-4 font-sans">
+        {poeticLabel}
+      </p>
+
+      {/* Contador debajo, fuera del canvas */}
+      <div className="flex items-end gap-6 sm:gap-10">
         {[
-          { value: counter.days, label: 'Días' },
-          { value: counter.hours, label: 'Horas' },
-          { value: counter.minutes, label: 'Minutos' },
-          { value: counter.seconds, label: 'Segundos' },
+          { value: days, label: "días" },
+          { value: hours, label: "horas" },
+          { value: minutes, label: "minutos" },
+          { value: seconds, label: "segundos" },
         ].map(({ value, label }) => (
           <div key={label} className="flex flex-col items-center gap-1">
-            <span className="text-4xl sm:text-5xl font-serif font-semibold text-[#E8A598] tabular-nums leading-none">
-              {label === 'Días' ? value : pad(value)}
+            <span className="text-3xl sm:text-5xl font-serif font-semibold text-[#FFFDFD] tabular-nums leading-none">
+              {String(value).padStart(2, "0")}
             </span>
-            <span className="text-[9px] font-mono tracking-widest uppercase text-[#62464D]">
+            <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase">
               {label}
             </span>
           </div>
         ))}
       </div>
-
-      <span className="text-[10px] font-mono tracking-widest uppercase text-[#62464D] animate-pulse-soft">
-        Raíces creciendo
-      </span>
     </div>
   );
 }

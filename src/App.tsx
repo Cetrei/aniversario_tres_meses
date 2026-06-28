@@ -54,13 +54,29 @@ export default function App() {
     <div className="min-h-screen bg-[#130D0F] text-[#EDE7E5] font-serif overflow-x-hidden antialiased relative">
       <AmbientLights />
 
+      {/* GitHub link — esquina inferior derecha, fijo */}
+      {CONFIG.githubRepoUrl && (
+        <a
+          href={CONFIG.githubRepoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-full bg-white/5 border border-white/10 text-white/30 hover:text-white/70 hover:bg-white/10 transition-all duration-300 text-[10px] font-mono tracking-wider backdrop-blur-sm"
+          aria-label="Ver código fuente en GitHub"
+        >
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+          </svg>
+          <span className="hidden sm:inline">código fuente</span>
+        </a>
+      )}
+
       {/* Header */}
       <header className="absolute top-0 w-full z-50 px-6 py-8">
         <div className="max-w-6xl mx-auto flex flex-col justify-center items-center gap-2">
           <span className="text-lg sm:text-xl font-serif font-bold tracking-widest text-[#E8A598] uppercase">
-            {CONFIG.programmerName}{' '}
+            {CONFIG.names.from}{' '}
             <span className="font-light text-[#B59F9F] mx-2">y</span>{' '}
-            {CONFIG.designerName}
+            {CONFIG.names.to}
           </span>
           <span className="text-[9px] tracking-widest text-[#62464D] uppercase font-mono">
             Un diseño en construcción
@@ -193,13 +209,13 @@ export default function App() {
             <div className="space-y-10 pt-16 border-t border-[#2D1C22]/40">
               <div className="space-y-4">
                 <span className="text-[9px] font-mono tracking-widest text-[#62464D] uppercase block">
-                  Interactivo · Gira la brújula
+                  Cupón de cita · Gira las veces que quieras
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">
                   Dejemos que el destino decida
                 </h3>
                 <p className="text-[#B59F9F] font-sans font-light text-sm">
-                  Haz clic y veamos qué memoria hermosa construimos este fin de semana.
+                  Tira hasta encontrar la que más te guste — y guárdala como cupón en tu dispositivo.
                 </p>
               </div>
               <DateRoulette options={CONFIG.dateIdeas} />
@@ -212,7 +228,7 @@ export default function App() {
 
       <footer className="w-full py-12 text-center">
         <p className="text-[9px] text-[#3C282D] tracking-widest uppercase font-mono font-light">
-          © {new Date().getFullYear()} {CONFIG.programmerName} y {CONFIG.designerName}
+          © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
           <br />
           <span className="text-[#2D1C22]">Un diseño infinito · 🌸</span>
         </p>

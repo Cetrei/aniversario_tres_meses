@@ -1,9 +1,12 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './index.css';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+import { CONFIG } from "./config";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+document.title = `💕 ${CONFIG.names.from} & ${CONFIG.names.to}`;
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>

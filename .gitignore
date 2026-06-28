@@ -1,2 +1,7 @@
-.dev\
+node_modules/
+.pnpm-store/
+
+.dev/
+build/
+
 AGENT.md

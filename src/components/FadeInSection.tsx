@@ -1,48 +1,74 @@
-import { useState, useEffect, useRef, ReactNode } from 'react';
+import { useEffect, useRef, ReactNode } from "react";
 
 interface FadeInSectionProps {
   children: ReactNode;
-  delay?: number;
   className?: string;
+  delay?: number; // ms
+  direction?: "up" | "down" | "left" | "right" | "none";
 }
 
-export default function FadeInSection({ children, delay = 0, className = '' }: FadeInSectionProps) {
-  const [isVisible, setVisible] = useState(false);
-  const domRef = useRef<HTMLDivElement>(null);
+export default function FadeInSection({
+  children,
+  className = "",
+  delay = 0,
+  direction = "up",
+}: FadeInSectionProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const translateMap: Record<string, string> = {
+    up: "translateY(28px)",
+    down: "translateY(-28px)",
+    left: "translateX(28px)",
+    right: "translateX(-28px)",
+    none: "none",
+  };
 
   useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Initial hidden state
+    el.style.opacity = "0";
+    el.style.transform = translateMap[direction] ?? "translateY(28px)";
+    el.style.transition = `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms`;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setVisible(true);
+            // Reveal: fade in from offset position
+            el.style.opacity = "1";
+            el.style.transform = "translate(0, 0)";
+            // Don't unobserve — keep watching so we can re-hide on exit
           } else {
-            // Reset suave — re-anima al volver a entrar desde cualquier dirección
-            setVisible(false);
+            // Only re-hide if scrolled out from the BOTTOM (going back up past it)
+            // Check: if element is above the viewport top, don't re-hide
+            const rect = el.getBoundingClientRect();
+            if (rect.bottom > 0) {
+              // Still partially visible or below viewport — don't hide
+              return;
+            }
+            // Element is fully above viewport: reset to allow re-trigger if they scroll back
+            // (optional — uncomment for loop animation)
+            // el.style.opacity = "0";
+            // el.style.transform = translateMap[direction] ?? "translateY(28px)";
           }
         });
       },
       {
-        rootMargin: '-80px 0px -80px 0px',
-        threshold: 0.05,
+        // Trigger as soon as ANY pixel is visible — no centering required
+        threshold: 0,
+        // Small negative margin to avoid triggering on elements just barely off-screen
+        rootMargin: "0px 0px -20px 0px",
       }
     );
 
-    const current = domRef.current;
-    if (current) observer.observe(current);
-    return () => {
-      if (current) observer.unobserve(current);
-    };
-  }, []);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [delay, direction]);
 
   return (
-    <div
-      ref={domRef}
-      className={`transition-all duration-1000 ease-out ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-      } ${className}`}
-      style={{ transitionDelay: isVisible ? `${delay}ms` : '0ms' }}
-    >
+    <div ref={ref} className={className}>
       {children}
     </div>
   );
