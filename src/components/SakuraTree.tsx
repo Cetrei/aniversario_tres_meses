@@ -765,8 +765,70 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
         onClick={() => {
           const canvas = canvasRef.current;
           if (!canvas) return;
+
+          // Composite: clone canvas y pinta el contador de días encima antes de exportar
+          const exportCanvas = document.createElement('canvas');
+          exportCanvas.width = canvas.width;
+          exportCanvas.height = canvas.height;
+          const exportCtx = exportCanvas.getContext('2d')!;
+
+          // Copia el frame actual
+          exportCtx.drawImage(canvas, 0, 0);
+
+          // Calcula días y prepara texto
+          const dpr = metricsRef.current.dpr;
+          const days = elapsed.days;
+          const daysLabel = days === 1 ? 'día juntos' : 'días juntos';
+          const line1 = String(days).padStart(3, '0');
+          const line2 = daysLabel.toUpperCase();
+
+          // Escala para DPR
+          const px = (n: number) => Math.round(n * dpr);
+
+          // Posición: esquina inferior izquierda (sobre las raíces)
+          const padX = px(14);
+          const padY = px(14);
+          const boxW = px(80);
+          const boxH = px(40);
+          const x = padX;
+          const y = canvas.height - padY - boxH;
+
+          // Fondo semitransparente
+          exportCtx.save();
+          exportCtx.globalAlpha = 0.62;
+          exportCtx.fillStyle = '#130D0F';
+          const radius = px(8);
+          exportCtx.beginPath();
+          exportCtx.moveTo(x + radius, y);
+          exportCtx.lineTo(x + boxW - radius, y);
+          exportCtx.quadraticCurveTo(x + boxW, y, x + boxW, y + radius);
+          exportCtx.lineTo(x + boxW, y + boxH - radius);
+          exportCtx.quadraticCurveTo(x + boxW, y + boxH, x + boxW - radius, y + boxH);
+          exportCtx.lineTo(x + radius, y + boxH);
+          exportCtx.quadraticCurveTo(x, y + boxH, x, y + boxH - radius);
+          exportCtx.lineTo(x, y + radius);
+          exportCtx.quadraticCurveTo(x, y, x + radius, y);
+          exportCtx.closePath();
+          exportCtx.fill();
+          exportCtx.globalAlpha = 1;
+
+          // Número grande de días
+          exportCtx.font = `bold ${px(18)}px monospace`;
+          exportCtx.fillStyle = '#FFFDFD';
+          exportCtx.textAlign = 'center';
+          exportCtx.textBaseline = 'middle';
+          exportCtx.fillText(line1, x + boxW / 2, y + boxH * 0.38);
+
+          // Etiqueta pequeña
+          exportCtx.font = `${px(6)}px monospace`;
+          exportCtx.fillStyle = '#E8A598';
+          exportCtx.letterSpacing = `${px(1)}px`;
+          exportCtx.fillText(line2, x + boxW / 2, y + boxH * 0.72);
+
+          exportCtx.restore();
+
           const link = document.createElement('a');
-          link.href = canvas.toDataURL('image/png');
+          link.href = exportCanvas.toDataURL('image/png');
           link.download = 'nuestro_arbol_sakura.png';
           link.click();
         }}

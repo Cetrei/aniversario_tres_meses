@@ -236,6 +236,118 @@ function SideDecoration({ side }: { side: 'left' | 'right' }) {
   );
 }
 
+// DESCARGA LA CARTA COMO PNG
+function downloadLetter(cfg: typeof CONFIG) {
+  const lc = cfg.loveLetter;
+  const W = 700;
+  const lineH = 22;
+  const paddingX = 48;
+  const bodyMaxW = W - paddingX * 2;
+
+  // Mide líneas del cuerpo
+  const tempCanvas = document.createElement('canvas');
+  const tempCtx = tempCanvas.getContext('2d')!;
+  tempCtx.font = '14px serif';
+  const wrappedBody: string[] = [];
+  for (const para of lc.body) {
+    const words = para.split(' ');
+    let line = '';
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word;
+      if (tempCtx.measureText(test).width > bodyMaxW) {
+        if (line) wrappedBody.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    if (line) wrappedBody.push(line);
+    wrappedBody.push(''); // espacio entre párrafos
+  }
+
+  const headerLines = 7; // place, para-label, to, greeting + padding
+  const footerLines = 3; // farewell, signature
+  const H = (headerLines + wrappedBody.length + footerLines + 3) * lineH + 96;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = Math.max(H, 480);
+  const ctx = canvas.getContext('2d')!;
+
+  // Fondo
+  const bg = ctx.createLinearGradient(0, 0, W * 0.4, H);
+  bg.addColorStop(0, '#1C1216');
+  bg.addColorStop(1, '#160E12');
+  ctx.fillStyle = bg;
+  ctx.roundRect(0, 0, W, canvas.height, 16);
+  ctx.fill();
+
+  // Borde
+  ctx.strokeStyle = 'rgba(78,49,60,0.5)';
+  ctx.lineWidth = 1;
+  ctx.roundRect(0.5, 0.5, W - 1, canvas.height - 1, 16);
+  ctx.stroke();
+
+  let y = 44;
+  const cx = W / 2;
+
+  // Lugar
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#62464D';
+  ctx.textAlign = 'right';
+  ctx.fillText(lc.place.toUpperCase(), W - paddingX, y);
+  y += lineH * 1.8;
+
+  // Para:
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#8C7565';
+  ctx.textAlign = 'left';
+  ctx.fillText('PARA:', paddingX, y);
+  y += lineH * 0.9;
+  ctx.font = 'italic 20px serif';
+  ctx.fillStyle = '#E8A598';
+  ctx.fillText(lc.to, paddingX, y);
+  y += lineH * 1.6;
+
+  // Saludo
+  ctx.font = '600 14px serif';
+  ctx.fillStyle = '#EDE7E5';
+  ctx.textAlign = 'left';
+  ctx.fillText(lc.greeting, paddingX, y);
+  y += lineH * 1.4;
+
+  // Cuerpo
+  ctx.font = '14px serif';
+  ctx.fillStyle = '#C9BFB8';
+  for (const line of wrappedBody) {
+    if (line === '') { y += lineH * 0.5; continue; }
+    ctx.fillText(line, paddingX, y);
+    y += lineH;
+  }
+  y += lineH;
+
+  // Despedida
+  ctx.font = 'italic 12px serif';
+  ctx.fillStyle = '#8C7565';
+  ctx.fillText(lc.farewell, paddingX, y);
+  y += lineH * 1.2;
+
+  // Firma
+  ctx.font = '600 18px serif';
+  ctx.fillStyle = '#E8A598';
+  ctx.fillText(lc.signature, paddingX, y);
+  y += lineH * 2;
+
+  // Pie decorativo
+  ctx.fillStyle = '#4E313C';
+  ctx.fillRect(cx - 30, y, 60, 1);
+
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = 'carta_de_amor.png';
+  link.click();
+}
+
 // APP PRINCIPAL
 export default function App() {
   const [introComplete, setIntroComplete] = useState(false);
@@ -467,6 +579,19 @@ export default function App() {
                 border: '1px solid rgba(78,49,60,0.35)',
               }}
             >
+              {/* Botón de guardar carta — esquina superior derecha */}
+              <button
+                type="button"
+                onClick={() => downloadLetter(CONFIG)}
+                aria-label="Guardar carta como imagen"
+                className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full flex items-center justify-center text-[#8C7565] border border-[#4E313C]/40 bg-[#130D0F]/50 hover:text-[#E8A598] hover:border-[#E8A598]/40 hover:bg-[#E8A598]/08 transition-all duration-300 backdrop-blur-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+              </button>
               {/* Tulipanes lilas decorativos — esquina superior derecha */}
               <svg
                 aria-hidden="true"
