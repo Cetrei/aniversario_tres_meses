@@ -1,0 +1,28 @@
+image:
+  inputLayout: D:\Projects\Personal\tercer_aniversario\public\QRLayout.png
+  output: D:\Projects\Personal\tercer_aniversario\public\output\QR.jpg
+
+qr:
+  url: ""
+
+  size: 350
+  position:
+    x: 679
+    y: 425
+
+  correction: H
+  colors:
+    foreground: "#111827"
+    background: "#FFFFFF"
+
+  margin:
+    size: 20
+    cornerRadius: 18
+    color: "#FFFFFF80"
+
+  logo:
+    enabled: true
+    image: D:\Projects\Personal\tercer_aniversario\public\QRIcon.jpg
+    size: 64
+    padding: 10
+    backgroundColor: "#FFFFFF"

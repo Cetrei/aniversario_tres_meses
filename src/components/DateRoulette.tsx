@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { DateIdea } from '../config';
 
 interface DateRouletteProps {
@@ -230,25 +231,27 @@ export default function DateRoulette({ options }: DateRouletteProps) {
 
   return (
     <div className="space-y-8 max-w-md mx-auto relative select-none">
-      {confetti.length > 0 && (
-        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {confetti.map((p) => (
-            <div
-              key={p.id}
-              className="absolute top-0 animate-confetti"
-              style={{
-                left: `${p.left}%`,
-                backgroundColor: p.color,
-                width: `${p.size}px`,
-                height: `${p.size * 1.4}px`,
-                borderRadius: '60% 0 60% 60%',
-                animationDelay: `${p.delay}s`,
-                animationDuration: `${p.duration}s`,
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {confetti.length > 0 &&
+        createPortal(
+          <div className="fixed inset-0 pointer-events-none z-[999] overflow-hidden">
+            {confetti.map((p) => (
+              <div
+                key={p.id}
+                className="absolute top-0 animate-confetti"
+                style={{
+                  left: `${p.left}%`,
+                  backgroundColor: p.color,
+                  width: `${p.size}px`,
+                  height: `${p.size * 1.4}px`,
+                  borderRadius: '60% 0 60% 60%',
+                  animationDelay: `${p.delay}s`,
+                  animationDuration: `${p.duration}s`,
+                }}
+              />
+            ))}
+          </div>,
+          document.body
+        )}
 
       {/* Tarjeta resultado */}
       <div className="min-h-[130px] flex flex-col items-center justify-center px-2">

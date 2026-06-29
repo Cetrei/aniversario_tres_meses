@@ -65,9 +65,75 @@ export interface LoveLetter {
   signatureImage?: string;
 }
 
+export interface SakuraTreeConfig {
+  /**
+   * Unidad de tiempo para los pétalos cayendo.
+   * 'minute' → 1 pétalo por cada minuto de relación acumulado.
+   * 'hour'   → 1 pétalo por cada hora de relación acumulada.
+   * Cambia cuántos pétalos se ven hoy y cuántos se verán en el futuro.
+   */
+  petalUnit: 'minute' | 'hour';
+
+  /**
+   * Máximo absoluto de pétalos cayendo simultáneamente (techo del árbol de 50+ años).
+   * El árbol de hoy mostrará solo una fracción pequeña de este número.
+   * Rango útil: 80–200. Default: 120.
+   */
+  maxFallingPetals: number;
+
+  /**
+   * Profundidad máxima de ramificación de las ramas (copa).
+   * Más profundidad = árbol más detallado y frondoso al madurar.
+   * Rango útil: 7–11. Default: 9.
+   */
+  maxBranchDepth: number;
+
+  /**
+   * Profundidad máxima de las raíces.
+   * Las raíces NO son visibles en los primeros años; aparecen gradualmente
+   * a partir de los ~2 años y alcanzan su máximo a los ~20 años.
+   * Rango útil: 5–8. Default: 7.
+   */
+  maxRootDepth: number;
+
+  /**
+   * Número total de semillas de flores en la copa.
+   * Más flores = follaje más denso al madurar.
+   * Rango útil: 200–500. Default: 350.
+   */
+  totalFlowerSeeds: number;
+
+  /**
+   * Longitud inicial del tronco (en unidades del canvas interno).
+   * El tronco maduro es notablemente más grueso y alto que el joven.
+   * Rango útil: 110–180. Default: 145.
+   */
+  trunkInitialLength: number;
+
+  /**
+   * Grosor inicial del tronco (del árbol completamente maduro).
+   * El grosor a cualquier edad = trunkInitialWidth * (0.18 + growth * 0.82).
+   * Rango útil: 18–30. Default: 24.
+   */
+  trunkInitialWidth: number;
+
+  /**
+   * Longitud inicial de las raíces del árbol maduro.
+   * Rango útil: 100–180. Default: 140.
+   */
+  rootInitialLength: number;
+
+  /**
+   * Grosor inicial de las raíces del árbol maduro.
+   * Rango útil: 14–26. Default: 20.
+   */
+  rootInitialWidth: number;
+}
+
 export interface CoupleConfig {
   /** Link al repo de GitHub, se muestra en el footer. Dejar vacío para ocultarlo. */
   githubRepoUrl: string;
+  sakuraTree: SakuraTreeConfig;
   names: Names;
   /** ISO string — fecha de inicio de la relación */
   anniversaryDate: string;
@@ -80,12 +146,30 @@ export interface CoupleConfig {
 export const CONFIG: CoupleConfig = {
   githubRepoUrl: "https://github.com/Cetrei/tercer_aniversario_-3",
 
+  sakuraTree: {
+    // 'minute' = 1 pétalo por minuto | 'hour' = 1 pétalo por hora de relación
+    petalUnit: 'minute',
+    // Techo de pétalos cayendo (se alcanza a los 50+ años)
+    maxFallingPetals: 150,
+    // Ramas de la copa
+    maxBranchDepth: 9,
+    // Raíces profundas (invisibles hoy, espectaculares a futuro)
+    maxRootDepth: 7,
+    // Flores en la copa del árbol maduro
+    totalFlowerSeeds: 350,
+    // Proporciones del árbol maduro
+    trunkInitialLength: 145,
+    trunkInitialWidth: 24,
+    rootInitialLength: 140,
+    rootInitialWidth: 20,
+  },
+
   names: {
     from: "Joanfer",
     to: "Jimena",
   },
 
-  anniversaryDate: "2026-04-01T00:00:00",
+  anniversaryDate: "1970-04-01T00:00:00",
 
   loveLetter: {
     place: "San José, 1 de julio de 2026",

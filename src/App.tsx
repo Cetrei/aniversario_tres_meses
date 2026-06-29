@@ -16,19 +16,21 @@ const INTRO_STEPS = [
   { text: null, sub: null, duration: 800 }, // pausa negra
 ];
 
-function CinematicIntro({ onDone }: { onDone: () => void }) {
+function CinematicIntro({ onReveal, onDone }: { onReveal: () => void; onDone: () => void }) {
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
   const [leaving, setLeaving] = useState(false);
+  const [skipVisible, setSkipVisible] = useState(false);
 
   useEffect(() => {
     if (step >= INTRO_STEPS.length) {
-      // Fade out de toda la pantalla intro
-      setTimeout(() => {
+      // Fade out de toda la pantalla intro, cruzado con la revelación del contenido principal
+      const revealTimer = setTimeout(() => {
         setLeaving(true);
-        setTimeout(onDone, 900);
+        onReveal();
+        setTimeout(onDone, 1000);
       }, 200);
-      return;
+      return () => clearTimeout(revealTimer);
     }
 
     const { duration } = INTRO_STEPS[step];
@@ -42,7 +44,20 @@ function CinematicIntro({ onDone }: { onDone: () => void }) {
     }, duration);
 
     return () => clearTimeout(hideTimer);
-  }, [step, onDone]);
+  }, [step, onDone, onReveal]);
+
+  // El botón de saltar aparece tras un breve instante, de forma muy discreta
+  useEffect(() => {
+    const skipTimer = setTimeout(() => setSkipVisible(true), 900);
+    return () => clearTimeout(skipTimer);
+  }, []);
+
+  const handleSkip = () => {
+    if (leaving) return;
+    setLeaving(true);
+    onReveal();
+    setTimeout(onDone, 700);
+  };
 
   const current = INTRO_STEPS[step];
 
@@ -50,8 +65,9 @@ function CinematicIntro({ onDone }: { onDone: () => void }) {
     <div
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0A0608]"
       style={{
-        transition: 'opacity 0.9s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'opacity 1s cubic-bezier(0.4,0,0.2,1), transform 1s cubic-bezier(0.4,0,0.2,1)',
         opacity: leaving ? 0 : 1,
+        transform: leaving ? 'scale(1.04)' : 'scale(1)',
         pointerEvents: leaving ? 'none' : 'all',
       }}
     >
@@ -108,6 +124,20 @@ function CinematicIntro({ onDone }: { onDone: () => void }) {
           <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
         </svg>
       </div>
+
+      {/* Botón muy sutil para saltar la introducción */}
+      <button
+        type="button"
+        onClick={handleSkip}
+        aria-label="Saltar introducción"
+        className="absolute bottom-6 right-6 sm:bottom-8 sm:right-8 text-[9px] font-mono tracking-[0.25em] uppercase text-white/20 hover:text-white/55 transition-colors duration-500 select-none"
+        style={{
+          opacity: skipVisible && !leaving ? 1 : 0,
+          transition: 'opacity 0.8s ease, color 0.3s ease',
+        }}
+      >
+        Saltar →
+      </button>
     </div>
   );
 }
@@ -186,16 +216,22 @@ function SideDecoration({ side }: { side: 'left' | 'right' }) {
 // ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
 export default function App() {
   const [introComplete, setIntroComplete] = useState(false);
+  const [contentVisible, setContentVisible] = useState(false);
 
   return (
     <>
-      {!introComplete && <CinematicIntro onDone={() => setIntroComplete(true)} />}
+      {!introComplete && (
+        <CinematicIntro
+          onReveal={() => setContentVisible(true)}
+          onDone={() => setIntroComplete(true)}
+        />
+      )}
 
       <div
         className="w-full h-screen overflow-y-auto snap-y snap-mandatory scroll-smooth bg-[#130D0F] text-[#EDE7E5] font-serif hide-scrollbar relative"
         style={{
-          transition: 'opacity 0.6s ease',
-          opacity: introComplete ? 1 : 0,
+          transition: 'opacity 1.1s cubic-bezier(0.4,0,0.2,1)',
+          opacity: contentVisible ? 1 : 0,
         }}
       >
         <AmbientLights />
@@ -270,21 +306,29 @@ export default function App() {
             </FadeInSection>
 
             <FadeInSection direction="up" delay={700}>
-              <div className="flex items-center gap-3 mt-1">
-                <div className="w-12 h-[1px] bg-gradient-to-r from-transparent to-[#4E313C]" />
-                <span className="text-[#E8A598] text-lg">🌸</span>
-                <div className="w-12 h-[1px] bg-gradient-to-l from-transparent to-[#4E313C]" />
+              <div className="flex flex-col items-center gap-2 mt-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-[1px] bg-gradient-to-r from-transparent to-[#4E313C]" />
+                  <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true" style={{ display: 'block', flexShrink: 0 }}>
+                    <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+                    <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+                    <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+                    <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+                    <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.7" />
+                  </svg>
+                  <div className="w-12 h-[1px] bg-gradient-to-l from-transparent to-[#4E313C]" />
+                </div>
+                <p className="text-[9px] font-mono tracking-[0.3em] text-[#62464D] uppercase animate-bounce-slow">
+                  Desliza para explorar ↓
+                </p>
               </div>
-              <p className="text-[9px] font-mono tracking-[0.3em] text-[#62464D] uppercase mt-4 animate-bounce-slow">
-                Desliza para explorar ↓
-              </p>
             </FadeInSection>
           </div>
         </section>
 
         {/* ── SECCIÓN 1: Árbol Sakura ────────────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
-          <div className="w-full max-w-xl max-h-[82vh] flex flex-col items-center justify-between gap-y-4 mt-8">
+        <section className="w-full h-screen flex flex-col items-center justify-start shrink-0 snap-start snap-always px-4 relative overflow-hidden pt-20">
+          <div className="w-full max-w-xl flex flex-col items-center gap-y-6 h-full">
             <FadeInSection direction="down" delay={0}>
               <div className="text-center space-y-1 relative z-10">
                 <span className="text-[#E8A598] text-xs italic font-light tracking-wide block">Nuestros mundos coincidieron...</span>
@@ -294,7 +338,7 @@ export default function App() {
               </div>
             </FadeInSection>
             <FadeInSection direction="up" delay={150} className="w-full flex justify-center items-center min-h-0 flex-1">
-              <SakuraTree anniversaryDate={CONFIG.anniversaryDate} />
+              <SakuraTree startDate={CONFIG.anniversaryDate} treeConfig={CONFIG.sakuraTree} />
             </FadeInSection>
           </div>
         </section>
