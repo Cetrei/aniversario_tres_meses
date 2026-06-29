@@ -6,7 +6,7 @@ const SMILE_MESSAGES: { threshold: number; text: string }[] = [
   { threshold: 40,  text: 'Cuando me dedicas esa sonrisa tranquila, el mundo empieza a ir un poco más lento.' },
   { threshold: 60,  text: 'Con tu risa, todo el ruido se apaga por completo. Me invade una calma profunda.' },
   { threshold: 80,  text: 'Tu alegría es mi paz absoluta. Nada más importa cuando te veo así de feliz.' },
-  { threshold: 100, text: 'Tu risa abierta detiene el tiempo por completo; eres mi hogar seguro y eterno.' },
+  { threshold: 100, text: 'Tu risa hermosaa detiene el tiempo por completo; eres mi hogar seguro y eterno.' },
 ];
 
 function getSmileMessage(level: number): string {
@@ -142,7 +142,7 @@ export default function SmileSlider() {
         <div className="flex justify-between text-[9px] font-mono text-[#8C7565] tracking-widest">
           <span>DÍA AGITADO</span>
           <span>TU SONRISA</span>
-          <span>TU RISA ABIERTA</span>
+          <span>TU RISA HERMOSA</span>
         </div>
       </div>
 

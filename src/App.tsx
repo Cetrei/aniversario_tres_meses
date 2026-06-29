@@ -33,7 +33,8 @@ function getMonthNumber(months: number): string {
 const INTRO_STEPS = [
   { text: 'Para ti.', sub: null, duration: 1400 },
   { text: 'Que eres', sub: 'mi lugar favorito.', duration: 1600 },
-  { text: 'Tres meses', sub: 'de lo mejor.', duration: 1600 },
+  { text: getMonthNumber(getMonthsElapsed(CONFIG.anniversaryDate))+ ' meses', sub: 'de lo mejor.', duration: 1600 },
+  { text: 'Mi marinovia', sub: 'la más especial y hermosa.', duration: 2000 },
   { text: null, sub: null, duration: 800 }, // pausa negra
 ];
 
@@ -350,7 +351,7 @@ export default function App() {
 
         {/* SECCIÓN 1: Árbol Sakura */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-start shrink-0 snap-start snap-always px-4 relative overflow-hidden pt-16 sm:pt-20">
-          <div className="w-full max-w-xl flex flex-col items-center gap-y-4 sm:gap-y-10 h-full">
+          <div className="w-full max-w-xl flex flex-col items-center gap-y-4 sm:gap-y-20 h-full">
             <FadeInSection direction="down" delay={0}>
               <div className="text-center space-y-1 relative z-10">
                 <span className="text-[#E8A598] text-xs italic font-light tracking-wide block">Nuestros mundos coincidieron...</span>
@@ -418,11 +419,11 @@ export default function App() {
             style={{ background: 'linear-gradient(to top, rgba(78,49,60,0.08) 0%, transparent 100%)' }}
           />
 
-          <div className="w-full max-w-lg max-h-[82vh] flex flex-col items-center justify-center gap-y-2 relative z-10">
+          <div className="w-full max-w-lg max-h-[82vh] flex flex-col items-center justify-center gap-y-14 sm:gap-y-10 relative z-10">
             <FadeInSection direction="down" delay={0}>
               <div className="text-center space-y-1">
                 <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase block">Galería · Toca para revelar</span>
-                <h2 className="text-xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">Nuestros Retazos</h2>
+                <h2 className="text-xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">Nuestros Momentos</h2>
                 <p className="text-[#B59F9F] font-sans font-light text-xs pt-1 max-w-sm mx-auto">
                   Instantes guardados con cuidado. Toca la fotografía para revelar el siguiente.
                 </p>

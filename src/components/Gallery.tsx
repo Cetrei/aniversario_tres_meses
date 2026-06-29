@@ -56,7 +56,7 @@ export default function Gallery({ photos }: GalleryProps) {
       {/* Contenedor principal con perspectiva 3D habilitada */}
       <div 
         onClick={nextPhoto}
-        className="relative w-full aspect-[3/4] cursor-pointer"
+        className="relative w-full aspect-[3/3.8] cursor-pointer"
         style={{ perspective: '1000px' }}
       >
         
@@ -105,7 +105,7 @@ export default function Gallery({ photos }: GalleryProps) {
             <div className="absolute inset-0 bg-[#3B1F27]/5 mix-blend-multiply pointer-events-none" />
           </div>
           <div className="mt-4 flex-1 flex items-center justify-center text-center px-1">
-            <p className="italic text-[11px] sm:text-xs text-[#28191E] font-serif font-medium leading-tight line-clamp-2">
+            <p className="italic text-[11px] sm:text-xs text-[#28191E] font-serif font-medium leading-tight line-clamp-4">
               "{photos[currentIndex].caption}"
             </p>
           </div>
@@ -140,7 +140,7 @@ export default function Gallery({ photos }: GalleryProps) {
       {/* Contador e indicadores inferiores interactivos */}
       <div className="mt-6 flex flex-col items-center gap-1.5 w-full text-center">
         <span className="text-[10px] font-mono tracking-widest text-[#62464D] uppercase">
-          {currentIndex + 1} / {photos.length} — Toca la foto para avanzar
+          {currentIndex + 1} / {photos.length} — Navega manualmente tocando los puntos
         </span>
         <div className="flex justify-center gap-1.5 max-w-full flex-wrap">
           {photos.map((_, i) => (
