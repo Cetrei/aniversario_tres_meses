@@ -213,6 +213,10 @@ export interface CoupleConfig {
    * Si está vacío usa el texto por defecto.
    */
   rouletteSpinPhrases: string[];
+  /** Hitos para la línea de tiempo de la portada. Se ignora si coverTimeline está desactivado. */
+  timelineMilestones: TimelineMilestone[];
+  /** Toggle de decoraciones visuales por sección */
+  decorations: DecorationsConfig;
 }
 
 export const CONFIG: CoupleConfig = {
@@ -470,4 +474,20 @@ export const CONFIG: CoupleConfig = {
       description: "Elegir una receta desconocida para los dos e intentarlo juntos sin morir apuñalados o por intoxicacion, creo que mejor tu cortas todo.",
     },
   ],
+
+  timelineMilestones: [
+    //{ date: "2019-03-01", label: "Nos conocimos la primera vez" },
+    //{ date: "2022-05-01", label: "Empezamos a hablar" },
+    //{ date: "2025-04-01", label: "Volvimos a ser más cercanos" },
+    //{ date: "2026-04-1", label: "Empezamos nuestra como marinovios" },
+  ],
+
+  decorations: {
+    coverTimeline: true,
+    treeConstellation: true,
+    letterPaperGlow: true,
+    galleryPetals: true,
+    letterSeal: true,
+    rouletteShimmer: true,
+  },
 };
