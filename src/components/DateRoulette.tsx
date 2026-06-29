@@ -23,18 +23,44 @@ function downloadCoupon(idea: DateIdea) {
   const ctx = canvas.getContext('2d')!;
   ctx.scale(2, 2);
 
-  ctx.fillStyle = '#130D0F';
+  // 1. FONDO CON TEXTURA Y DEGRADADO COMPLEJO (Adiós a lo plano)
+  const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 50, W / 2, H / 2, W * 0.6);
+  bgGrad.addColorStop(0, '#1C1316');
+  bgGrad.addColorStop(1, '#0F0A0C');
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
+  // Inyección de grano/ruido orgánico al lienzo
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < 1200; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const opacity = Math.random() * 0.035;
+    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+    ctx.fillRect(x, y, 1.2, 1.2);
+  }
+  ctx.restore();
+
+  // Marcas de agua botánicas tenues de fondo
+  ctx.strokeStyle = 'rgba(232, 165, 152, 0.025)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(W - 80, H / 2, 90, 0, Math.PI * 2);
+  ctx.arc(W - 80, H / 2, 130, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Borde punteado clásico de ticket
   ctx.setLineDash([8, 6]);
   ctx.strokeStyle = '#3C282D';
   ctx.lineWidth = 1.5;
   ctx.strokeRect(16, 16, W - 32, H - 32);
   ctx.setLineDash([]);
 
+  // Perforaciones circulares de cupones antiguos
   const perf = (x: number) => {
     ctx.beginPath();
-    ctx.arc(x, H / 2, 18, -Math.PI / 2, Math.PI / 2, x === 0);
+    ctx.arc(x, H / 2, 16, -Math.PI / 2, Math.PI / 2, x === 0);
     ctx.fillStyle = '#130D0F';
     ctx.fill();
     ctx.strokeStyle = '#3C282D';
@@ -44,6 +70,7 @@ function downloadCoupon(idea: DateIdea) {
   perf(0);
   perf(W);
 
+  // Línea divisoria interna
   ctx.strokeStyle = '#2D1C22';
   ctx.setLineDash([5, 4]);
   ctx.lineWidth = 1;
@@ -57,70 +84,64 @@ function downloadCoupon(idea: DateIdea) {
   const titleText = idea.title.replace(/^\S+\s*/, '');
 
   ctx.textAlign = 'center';
-  ctx.font = '44px serif';
+  ctx.fillStyle = '#FFFDFD';
+  ctx.font = '42px serif';
   ctx.fillText(emoji, 80, H / 2 - 12);
 
   ctx.fillStyle = '#E8A598';
-  ctx.font = 'bold 11px monospace';
+  ctx.font = 'bold 10px monospace';
   ctx.letterSpacing = '3px';
   ctx.fillText('CUPÓN DE CITA', 80, H / 2 + 28);
   ctx.letterSpacing = '0px';
 
-  // DIBUJO DE DECORACIÓN: RAMITA DE ROSAS VECTORIAL
+  // ILUSTRACIÓN VECTORIAL EXTRA: RAMA DE ROSAS ROMÁNTICA
   ctx.save();
-  ctx.translate(W - 85, 55);
-  // Tallo
-  ctx.strokeStyle = '#3C282D';
+  ctx.translate(W - 90, 60);
+  ctx.strokeStyle = '#4E313C';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.bezierCurveTo(0, 0, 15, -15, 20, -30);
+  ctx.bezierCurveTo(0, 0, 15, -15, 20, -32);
   ctx.stroke();
-  // Hojas estilizadas
-  ctx.fillStyle = '#2A1C20';
+  // Hoja
+  ctx.fillStyle = '#24171A';
   ctx.beginPath();
-  ctx.ellipse(8, -12, 3, 6, Math.PI / 4, 0, Math.PI * 2);
+  ctx.ellipse(8, -14, 4, 7, Math.PI / 4, 0, Math.PI * 2);
   ctx.fill();
-  // Capullo de Rosa principal
+  // Flor principal
   ctx.fillStyle = '#E8A598';
   ctx.beginPath();
-  ctx.arc(20, -32, 8, 0, Math.PI * 2);
+  ctx.arc(20, -34, 9, 0, Math.PI * 2);
   ctx.fill();
-  // Espiral interno de la flor
-  ctx.strokeStyle = '#130D0F';
+  // Detalle central
+  ctx.strokeStyle = '#1C1316';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(19, -31, 4, 0, Math.PI, true);
+  ctx.arc(19, -33, 4, 0, Math.PI, true);
   ctx.stroke();
   ctx.restore();
 
+  // Textos descriptivos
   ctx.textAlign = 'left';
   ctx.fillStyle = '#FFFDFD';
   ctx.font = 'bold 22px serif';
-  wrapText(ctx, titleText, 184, 80, W - 240, 30);
+  wrapText(ctx, titleText, 184, 80, W - 250, 30);
 
   ctx.fillStyle = '#B59F9F';
   ctx.font = '15px serif';
-  wrapText(ctx, idea.description, 184, 130, W - 240, 22);
+  wrapText(ctx, idea.description, 184, 132, W - 250, 22);
 
   ctx.fillStyle = '#3C282D';
   ctx.font = '10px monospace';
   ctx.textAlign = 'right';
-  ctx.fillText('válido cuando quieras · hecho con amor 🌸', W - 28, H - 26);
+  ctx.fillText('válido en cualquier momento · con amor eterno 🌸', W - 28, H - 26);
 
   const link = document.createElement('a');
   link.href = canvas.toDataURL('image/png');
-  link.download = `cupon-cita-${titleText.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}.png`;
+  link.download = `validez-cita-${titleText.toLowerCase().replace(/\s+/g, '-').slice(0, 25)}.png`;
   link.click();
 }
 
-function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  maxW: number,
-  lineH: number
-) {
+function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lineH: number) {
   const words = text.split(' ');
   let line = '';
   for (const word of words) {
@@ -149,7 +170,7 @@ export default function DateRoulette({ options }: DateRouletteProps) {
     setConfetti([]);
 
     let count = 0;
-    const totalSteps = 22 + Math.floor(Math.random() * 8);
+    const totalSteps = 25 + Math.floor(Math.random() * 8);
 
     intervalRef.current = setInterval(() => {
       setSelected(options[Math.floor(Math.random() * options.length)]);
@@ -161,28 +182,23 @@ export default function DateRoulette({ options }: DateRouletteProps) {
         setSpinning(false);
         setSpinCount((n) => n + 1);
 
-        // DISPARAR CONFETI DE PÉTALOS ROSADOS
-        const petalColors = ['#E8A598', '#FFD3DF', '#FFFDFD', '#4E313C', '#B59F9F'];
-        const particles = Array.from({ length: 35 }, (_, i) => ({
+        // Lluvia de confeti orgánica en forma de pétalos cayendo
+        const petalColors = ['#E8A598', '#FFD4E2', '#FFFDFD', '#543641'];
+        const particles = Array.from({ length: 40 }, (_, i) => ({
           id: Date.now() + i,
           left: Math.random() * 100,
-          size: 6 + Math.random() * 9,
+          size: 7 + Math.random() * 8,
           color: petalColors[Math.floor(Math.random() * petalColors.length)],
-          delay: Math.random() * 0.4,
-          duration: 2.5 + Math.random() * 1.5,
+          delay: Math.random() * 0.3,
+          duration: 2.4 + Math.random() * 1.4,
         }));
         setConfetti(particles);
       }
-    }, 100);
+    }, 90);
   }, [spinning, options]);
 
-  const handleDownload = () => {
-    if (selected) downloadCoupon(selected);
-  };
-
   return (
-    <div className="space-y-8 max-w-md mx-auto relative">
-      {/* Capa de Confeti */}
+    <div className="space-y-8 max-w-md mx-auto relative select-none">
       {confetti.length > 0 && (
         <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
           {confetti.map((p) => (
@@ -193,45 +209,39 @@ export default function DateRoulette({ options }: DateRouletteProps) {
                 left: `${p.left}%`,
                 backgroundColor: p.color,
                 width: `${p.size}px`,
-                height: `${p.size * 1.3}px`,
-                borderRadius: '50% 0 50% 50%', // Forma de pétalo cayendo
+                height: `${p.size * 1.4}px`,
+                borderRadius: '60% 0 60% 60%',
                 animationDelay: `${p.delay}s`,
                 animationDuration: `${p.duration}s`,
-                boxShadow: p.color === '#FFFDFD' ? '0 0 8px rgba(255,255,255,0.4)' : 'none',
               }}
             />
           ))}
         </div>
       )}
 
-      <div className="min-h-[140px] flex flex-col items-center justify-center">
+      <div className="min-h-[130px] flex flex-col items-center justify-center px-2">
         {spinning ? (
           <div className="flex flex-col items-center gap-3">
-            <span
-              className="text-2xl text-[#E8A598] inline-block"
-              style={{ animation: 'spin 0.6s linear infinite' }}
-            >
+            {/* CORREGIDO: Uso de animate-spin nativo */}
+            <span className="text-2xl text-[#E8A598] inline-block animate-spin">
               ✦
             </span>
             <p className="text-xs font-serif italic text-[#8C7565]">
-              Buscando nuestra próxima memoria...
+              Buscando nuestro próximo destino...
             </p>
           </div>
         ) : selected ? (
-          <div
-            key={`${selected.title}-${spinCount}`}
-            className="space-y-3 text-center animate-fade-in-up"
-          >
-            <h4 className="text-2xl font-serif font-bold text-[#FFFDFD]">
+          <div key={`${selected.title}-${spinCount}`} className="space-y-2.5 text-center">
+            <h4 className="text-xl sm:text-2xl font-serif font-bold text-[#FFFDFD]">
               {selected.title}
             </h4>
-            <p className="text-sm text-[#B59F9F] font-sans font-light leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#B59F9F] font-sans font-light leading-relaxed">
               {selected.description}
             </p>
           </div>
         ) : (
-          <p className="text-sm text-[#62464D] font-serif italic text-center">
-            A veces, lo mejor es dejarse sorprender.
+          <p className="text-xs sm:text-sm text-[#62464D] font-serif italic text-center">
+            A veces, los planes improvisados guardan los mejores recuerdos.
           </p>
         )}
       </div>
@@ -240,39 +250,24 @@ export default function DateRoulette({ options }: DateRouletteProps) {
         <button
           onClick={spin}
           disabled={spinning}
-          className={`w-full sm:w-auto py-4 px-8 rounded-full font-sans font-light text-sm tracking-wide transition-all duration-500 ease-out border ${
+          className={`w-full sm:w-auto py-3.5 px-8 rounded-full font-sans font-light text-xs tracking-wide transition-all duration-500 border ${
             spinning
-              ? 'bg-transparent border-[#2D1C22] text-[#62464D] cursor-not-allowed'
-              : 'bg-[#E8A598]/5 border-[#E8A598]/30 text-[#E8A598] hover:bg-[#E8A598]/10 hover:border-[#E8A598]/60 hover:shadow-[0_0_20px_rgba(232,165,152,0.1)]'
+              ? 'bg-transparent border-[#2D1C22] text-[#4E313C] cursor-not-allowed'
+              : 'bg-[#E8A598]/5 border-[#E8A598]/20 text-[#E8A598] hover:bg-[#E8A598]/10 hover:border-[#E8A598]/50'
           }`}
         >
-          {spinning
-            ? 'Girando la brújula...'
-            : spinCount === 0
-            ? 'Descubrir nuestro siguiente plan'
-            : 'Girar de nuevo ✦'}
+          {spinning ? 'Garantizando sorpresas...' : spinCount === 0 ? 'Descubrir una idea' : 'Girar de nuevo ✦'}
         </button>
 
         {selected && !spinning && (
           <button
-            onClick={handleDownload}
-            className="w-full sm:w-auto py-4 px-6 rounded-full font-sans font-light text-sm tracking-wide transition-all duration-300 border border-[#2D1C22] text-[#62464D] hover:border-[#8C7565] hover:text-[#B59F9F] flex items-center justify-center gap-2"
-            aria-label="Guardar cupón como imagen"
+            onClick={() => downloadCoupon(selected)}
+            className="w-full sm:w-auto py-3.5 px-6 rounded-full font-sans font-light text-xs tracking-wide transition-all duration-300 border border-[#2D1C22] text-[#8C7565] hover:border-[#8C7565] hover:text-[#FFFDFD] flex items-center justify-center gap-2"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
-            </svg>
-            Guardar cupón
+            Guardar boleto ilustrado
           </button>
         )}
       </div>
-
-      {spinCount > 0 && !spinning && (
-        <p className="text-[10px] font-mono text-[#3C282D] text-center tracking-wider">
-          {spinCount === 1 ? '1 tirada' : `${spinCount} tiradas`} — elige la que más te llame
-        </p>
-      )}
     </div>
   );
 }

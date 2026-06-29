@@ -1,132 +1,110 @@
 import { useEffect, useRef, useState } from "react";
 
 interface SakuraTreeProps {
-  anniversaryDate: string; // ISO string
+  anniversaryDate: string;
 }
 
 interface BranchData {
   x1: number; y1: number;
   x2: number; y2: number;
   cpx: number; cpy: number;
-  width: number;
+  baseWidth: number;
   depth: number;
+  appearTimeline: number; // Momento específico en el que brota esta rama (0-1)
 }
 
 interface FlowerData {
   x: number; y: number;
-  r: number;
+  maxRadius: number;
   opacity: number;
   phase: number;
   speed: number;
-  bloomDelay: number; // Tiempo de espera para simular nacimiento progresivo
+  appearTimeline: number; // Momento en el que florece (0.6 - 1.0)
 }
 
-function useCountup(anniversaryDate: string) {
-  const calc = () => {
-    const diff = Date.now() - new Date(anniversaryDate).getTime();
-    const totalSeconds = Math.max(0, Math.floor(diff / 1000));
-    return {
-      days: Math.floor(totalSeconds / 86400),
-      hours: Math.floor((totalSeconds % 86400) / 3600),
-      minutes: Math.floor((totalSeconds % 3600) / 60),
-      seconds: totalSeconds % 60,
-      totalHours: Math.floor(totalSeconds / 3600),
-    };
-  };
-  const [elapsed, setElapsed] = useState(calc);
-  useEffect(() => {
-    const id = setInterval(() => setElapsed(calc()), 1000);
-    return () => clearInterval(id);
-  }, [anniversaryDate]);
-  return elapsed;
+interface FallingPetal {
+  x: number; y: number;
+  speedY: number; speedX: number;
+  size: number; phase: number;
 }
 
 function seededRand(seed: number) {
-  const x = Math.sin(seed + 1) * 10000;
+  const x = Math.sin(seed + 8) * 10000;
   return x - Math.floor(x);
 }
 
-function buildTree(
-  cx: number,
-  baseY: number,
-  trunkLen: number,
-  trunkWidth: number
-): { branches: BranchData[]; tips: Array<{ x: number; y: number }> } {
+// Genera la estructura botánica completa distribuyendo el momento exacto en que brota cada rama
+function buildEvolutionaryTree(cx: number, baseY: number, maxLen: number, maxWidth: number) {
   const branches: BranchData[] = [];
-  const tips: Array<{ x: number; y: number }> = [];
-  let seed = 0;
+  const tips: { x: number; y: number; depth: number }[] = [];
+  let seed = 205;
 
-  function grow(
-    x: number, y: number,
-    angle: number, length: number,
-    width: number, depth: number
-  ) {
-    if (depth > 9 || length < 5) {
-      tips.push({ x, y });
-      return;
-    }
-
+  function grow(x: number, y: number, angle: number, length: number, width: number, depth: number, parentTimeline: number) {
     const rad = (angle * Math.PI) / 180;
     const x2 = x + Math.cos(rad) * length;
     const y2 = y - Math.sin(rad) * length;
-
-    const jitter = (seededRand(seed++) - 0.5) * width * 2.5;
+    
+    const jitter = (seededRand(seed++) - 0.5) * width * 2.0;
     const cpx = (x + x2) / 2 + jitter;
     const cpy = (y + y2) / 2 + (seededRand(seed++) - 0.5) * width;
 
-    branches.push({ x1: x, y1: y, x2, y2, cpx, cpy, width, depth });
+    // Las ramas exteriores (mayor depth) brotan más tarde en la línea de tiempo
+    const appearTimeline = parentTimeline + (0.05 + seededRand(seed++) * 0.08);
 
-    if (depth >= 6) {
-      tips.push({ x: x2, y: y2 });
+    branches.push({ x1: x, y1: y, x2, y2, cpx, cpy, baseWidth: width, depth, appearTimeline: Math.min(0.65, appearTimeline) });
+
+    if (depth > 8 || length < 5) {
+      tips.push({ x: x2, y: y2, depth });
+      return;
     }
 
     const spread = 20 + depth * 2.5;
-    const lenRatio = 0.67 - depth * 0.008;
-    const wRatio = 0.60;
-
-    grow(x2, y2, angle - spread, length * lenRatio, width * wRatio, depth + 1);
-    grow(x2, y2, angle + spread, length * lenRatio, width * wRatio, depth + 1);
-
-    if (depth < 4) {
-      const lateralAngle = angle + (seededRand(seed++) - 0.5) * 15;
-      grow(x2, y2, lateralAngle, length * lenRatio * 0.8, width * wRatio * 0.75, depth + 2);
-    }
+    const lenRatio = 0.70 - depth * 0.01;
+    grow(x2, y2, angle - spread, length * lenRatio, width * 0.65, depth + 1, appearTimeline);
+    grow(x2, y2, angle + spread, length * lenRatio, width * 0.65, depth + 1, appearTimeline);
   }
 
-  grow(cx, baseY, 90, trunkLen, trunkWidth, 0);
+  // La base/tronco inicial nace en el tiempo 0
+  grow(cx, baseY, 90, maxLen, maxWidth, 0, 0);
   return { branches, tips };
 }
 
 export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
-  const { days, hours, minutes, seconds, totalHours } = useCountup(anniversaryDate);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const stateRef = useRef<{
     branches: BranchData[];
     flowers: FlowerData[];
+    ambientPetals: FallingPetal[];
     initialized: boolean;
-  }>({ branches: [], flowers: [], initialized: false });
+  }>({ branches: [], flowers: [], ambientPetals: [], initialized: false });
+
+  // 8 Segundos totales de una transición cinemática suave desde la semilla
+  const [introProgress, setIntroProgress] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const resize = () => {
-      const parent = canvas.parentElement;
-      const size = Math.min(parent?.clientWidth ?? 420, 500);
-      if (canvas.width !== size || canvas.height !== size) {
-        canvas.width = size;
-        canvas.height = size;
-        stateRef.current.initialized = false;
-      }
+      const size = Math.min(canvas.parentElement?.clientWidth || 360, 380);
+      canvas.width = size;
+      canvas.height = size;
+      stateRef.current.initialized = false;
     };
     resize();
-    const ro = new ResizeObserver(resize);
-    if (canvas.parentElement) ro.observe(canvas.parentElement);
 
+    let startTimestamp: number | null = null;
     let t = 0;
 
-    const draw = () => {
+    const draw = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const elapsed = timestamp - startTimestamp;
+      
+      // Control de progreso lineal de la animación de crecimiento (0.0 a 1.0)
+      const currentProgress = Math.min(1, elapsed / 8000);
+      setIntroProgress(currentProgress);
+
       const c = canvasRef.current;
       if (!c) return;
       const ctx = c.getContext("2d");
@@ -135,166 +113,145 @@ export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
       const W = c.width;
       const H = c.height;
       const cx = W / 2;
-      const baseY = H * 0.94;
-      const trunkLen = H * 0.26;
-      const trunkWidth = W * 0.022;
+      const baseY = H * 0.90;
 
+      // Inicialización determinista estructurada única
       if (!stateRef.current.initialized) {
-        const { branches, tips } = buildTree(cx, baseY, trunkLen, trunkWidth);
+        const { branches, tips } = buildEvolutionaryTree(cx, baseY, H * 0.25, W * 0.024);
         stateRef.current.branches = branches;
 
-        const shuffled = [...tips];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(seededRand(i * 7 + 3) * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-
-        const count = Math.min(totalHours, shuffled.length * 4);
-        stateRef.current.flowers = Array.from({ length: count }, (_, i) => {
-          const tip = shuffled[i % shuffled.length];
-          const scatter = 20;
+        // Flores mapeadas al final del crecimiento (tiempo 0.62 en adelante)
+        stateRef.current.flowers = Array.from({ length: 280 }, (_, i) => {
+          const tip = tips[i % tips.length];
           return {
-            x: tip.x + (seededRand(i * 3 + 1) - 0.5) * scatter,
-            y: tip.y + (seededRand(i * 3 + 2) - 0.5) * scatter,
-            r: 4 + seededRand(i * 3 + 3) * 7,
-            opacity: 0.6 + seededRand(i * 5) * 0.4,
+            x: tip.x + (seededRand(i * 3) - 0.5) * 35,
+            y: tip.y + (seededRand(i * 4 + 1) - 0.5) * 35,
+            maxRadius: 3.5 + seededRand(i * 5) * 4.5,
+            opacity: 0.7 + seededRand(i * 6) * 0.3,
             phase: seededRand(i * 7) * Math.PI * 2,
-            speed: 0.2 + seededRand(i * 11) * 0.4,
-            bloomDelay: seededRand(i * 13) * 4.0, // Las flores nacerán escalonadamente en un rango de 4 segundos
+            speed: 0.4 + seededRand(i * 8) * 0.4,
+            appearTimeline: 0.60 + seededRand(i * 9) * 0.38 // Florecen al final del ciclo
           };
         });
+
+        // Inicialización de pétalos que caen continuamente por el viento
+        stateRef.current.ambientPetals = Array.from({ length: 25 }, (_, i) => ({
+          x: seededRand(i * 2) * W,
+          y: seededRand(i * 3) * H * 0.8,
+          speedY: 0.6 + seededRand(i * 4) * 0.8,
+          speedX: -0.3 + seededRand(i * 5) * 0.6,
+          size: 3 + seededRand(i * 6) * 4,
+          phase: seededRand(i * 7) * 5
+        }));
 
         stateRef.current.initialized = true;
       }
 
-      t += 0.016;
+      t += 0.015;
       ctx.clearRect(0, 0, W, H);
 
-      const { branches, flowers } = stateRef.current;
+      // 1. DIBUJAR RAMAS (Aparecen según su línea de tiempo evolutiva)
+      for (const b of stateRef.current.branches) {
+        if (currentProgress < b.appearTimeline) continue;
 
-      // Dibujar Ramas
-      const sorted = [...branches].sort((a, b) => b.depth - a.depth);
-      for (const b of sorted) {
+        // Easing de extensión interna de la rama
+        const branchLocalProgress = Math.min(1, (currentProgress - b.appearTimeline) / 0.15);
+        
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(b.x1, b.y1);
-        ctx.quadraticCurveTo(b.cpx, b.cpy, b.x2, b.y2);
 
-        const depthRatio = b.depth / 9;
-        const r = Math.round(105 + depthRatio * 30);
-        const g = Math.round(78 + depthRatio * 20);
-        const bv = Math.round(42 + depthRatio * 15);
-        ctx.strokeStyle = `rgb(${r},${g},${bv})`;
-        ctx.lineWidth = b.width;
+        // Interpolamos la curva de crecimiento lineal
+        const currentEndX = b.x1 + (b.x2 - b.x1) * branchLocalProgress;
+        const currentEndY = b.y1 + (b.y2 - b.y1) * branchLocalProgress;
+        const currentCpx = b.x1 + (b.cpx - b.x1) * branchLocalProgress;
+        const currentCpy = b.y1 + (b.cpy - b.y1) * branchLocalProgress;
+
+        ctx.quadraticCurveTo(currentCpx, currentCpy, currentEndX, currentEndY);
+
+        const ratio = b.depth / 9;
+        ctx.strokeStyle = `rgb(${Math.round(85 + ratio * 35)}, ${Math.round(60 + ratio * 20)}, ${Math.round(40 + ratio * 10)})`;
+        ctx.lineWidth = Math.max(0.6, b.baseWidth * (1 - ratio * 0.4));
         ctx.lineCap = "round";
-        ctx.lineJoin = "round";
         ctx.stroke();
         ctx.restore();
       }
 
-      // Dibujar Pétalos Orgánicos Reales con Animación de Nacimiento
-      for (const f of flowers) {
-        // Calcular escala de crecimiento (blooming scale) según el tiempo interno transcurrido
-        const bloomScale = Math.min(1, Math.max(0, (t - f.bloomDelay) * 1.8));
-        if (bloomScale <= 0) continue; // No renderizar si no ha nacido
+      // 2. DIBUJAR PÉTALOS EN LAS RAMAS (Nacen de un capullo diminuto a flor completa)
+      for (const f of stateRef.current.flowers) {
+        if (currentProgress < f.appearTimeline) continue;
 
-        const sway = Math.sin(t * f.speed + f.phase) * 2.0;
-        const bob = Math.cos(t * f.speed * 0.7 + f.phase) * 1.4;
-        const fx = f.x + sway;
-        const fy = f.y + bob;
-        const currentRadius = f.r * bloomScale;
+        // Escala del pétalo creciendo individualmente desde 0% a su tamaño real
+        const flowerLocalProgress = Math.min(1, (currentProgress - f.appearTimeline) / 0.20);
+        
+        const swayX = Math.sin(t * f.speed + f.phase) * 1.8;
+        const currentR = f.maxRadius * flowerLocalProgress;
 
         ctx.save();
-        ctx.globalAlpha = f.opacity;
-        ctx.translate(fx, fy);
-        // Pequeño giro dinámico simulando la brisa
-        ctx.rotate(f.phase + t * f.speed * 0.4);
+        ctx.globalAlpha = f.opacity * flowerLocalProgress;
+        ctx.translate(f.x + swayX, f.y + Math.cos(t * f.speed) * 1);
+        ctx.rotate(f.phase + t * 0.05);
 
-        // Geometría orgánica de un pétalo de Sakura (Curvas Bézier gemelas con hendidura)
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.bezierCurveTo(
-          -currentRadius / 1.3, -currentRadius, 
-          -currentRadius, -currentRadius / 3, 
-          0, currentRadius
-        );
-        ctx.bezierCurveTo(
-          currentRadius, -currentRadius / 3, 
-          currentRadius / 1.3, -currentRadius, 
-          0, 0
-        );
+        ctx.bezierCurveTo(-currentR, -currentR, -currentR, currentR / 2, 0, currentR);
+        ctx.bezierCurveTo(currentR, currentR / 2, currentR, -currentR, 0, 0);
 
-        // Degradado romántico rosado no translúcido/brillante de punto genérico
-        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, currentRadius);
-        grad.addColorStop(0, "rgba(255, 230, 238, 1)");
-        grad.addColorStop(0.5, "rgba(255, 180, 200, 0.95)");
-        grad.addColorStop(1, "rgba(245, 140, 165, 0)");
-        
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, currentR || 1);
+        grad.addColorStop(0, "rgba(255, 240, 243, 1)");
+        grad.addColorStop(0.7, "rgba(242, 154, 173, 0.95)");
+        grad.addColorStop(1, "rgba(232, 115, 140, 0)");
         ctx.fillStyle = grad;
         ctx.fill();
-
-        // Línea central fina del nervio del pétalo
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(0, currentRadius * 0.5);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-
         ctx.restore();
+      }
+
+      // 3. RETORNO DE LOS PÉTALOS AMBIENTALES FLOTANTES EN EL CANVAS
+      if (currentProgress > 0.45) {
+        for (const p of stateRef.current.ambientPetals) {
+          p.y += p.speedY;
+          p.x += p.speedX + Math.sin(t + p.phase) * 0.2;
+
+          // Si el pétalo sale de los bordes, reinicia arriba de forma infinita
+          if (p.y > H || p.x < 0 || p.x > W) {
+            p.y = -10;
+            p.x = Math.random() * W;
+          }
+
+          ctx.save();
+          ctx.globalAlpha = 0.65;
+          ctx.fillStyle = "rgba(242, 154, 173, 0.85)";
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.phase + t * 0.4);
+          
+          ctx.beginPath();
+          ctx.ellipse(0, 0, p.size, p.size * 0.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
       }
 
       animRef.current = requestAnimationFrame(draw);
     };
 
     animRef.current = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animRef.current);
+  }, []);
 
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      ro.disconnect();
-    };
-  }, [totalHours]);
-
-  useEffect(() => {
-    stateRef.current.initialized = false;
-  }, [totalHours]);
-
-  const poeticLabel =
-    totalHours === 0
-      ? "el primer momento"
-      : totalHours === 1
-      ? "una hora, un pétalo florecido"
-      : `${totalHours.toLocaleString()} pétalos — uno floreciendo por cada hora juntos`;
+  const textLabels = [
+    { max: 0.20, txt: "Una pequeña semilla despierta en la tierra..." },
+    { max: 0.45, txt: "Brota un tallo joven buscando el cielo..." },
+    { max: 0.70, txt: "Las ramas se extienden creando vuestro espacio..." },
+    { max: 1.00, txt: "Los pétalos de Sakura se abren ante ti... Floreciendo." }
+  ];
+  const currentText = textLabels.find(l => introProgress <= l.max)?.txt || textLabels[3].txt;
 
   return (
-    <div className="flex flex-col items-center gap-8 w-full">
-      <canvas
-        ref={canvasRef}
-        className="w-full max-w-[500px] aspect-square"
-        aria-label="Árbol de sakura — pétalos reales creciendo hora tras hora"
-      />
-
-      <p className="text-xs text-[#8C7565] italic tracking-wide text-center px-4 font-sans">
-        {poeticLabel}
+    <div className="flex flex-col items-center gap-2 w-full select-none">
+      <canvas ref={canvasRef} className="w-full max-w-[340px] aspect-square drop-shadow-[0_0_20px_rgba(232,165,152,0.06)]" />
+      <p className="text-[11px] font-sans italic text-[#8C7565] tracking-wide text-center min-h-[16px] px-2">
+        {currentText}
       </p>
-
-      <div className="flex items-end gap-6 sm:gap-10">
-        {[
-          { value: days, label: "días" },
-          { value: hours, label: "horas" },
-          { value: minutes, label: "minutos" },
-          { value: seconds, label: "segundos" },
-        ].map(({ value, label }) => (
-          <div key={label} className="flex flex-col items-center gap-1">
-            <span className="text-3xl sm:text-5xl font-serif font-semibold text-[#FFFDFD] tabular-nums leading-none">
-              {String(value).padStart(2, "0")}
-            </span>
-            <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase">
-              {label}
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

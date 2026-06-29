@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 
 const SMILE_MESSAGES: { threshold: number; text: string }[] = [
-  { threshold: 0,  text: 'A veces el ruido del día es ensordecedor y me llena de estrés...' },
-  { threshold: 20, text: 'Pero cuando me dedicas esa sonrisa tranquila, el mundo empieza a ir un poco más lento.' },
-  { threshold: 45, text: 'Con tu risa, todo el ruido se apaga por completo. Me invade una calma profunda.' },
-  { threshold: 75, text: 'Tu alegría es mi paz absoluta. Nada más importa cuando te veo así de feliz.' },
+  { threshold: 0,   text: 'A veces el ruido del día es ensordecedor y me llena de estrés...' },
+  { threshold: 20,  text: 'Pero empiezo a pensar en ti y todo el entorno se suaviza poco a poco.' },
+  { threshold: 40,  text: 'Cuando me dedicas esa sonrisa tranquila, el mundo empieza a ir un poco más lento.' },
+  { threshold: 60,  text: 'Con tu risa, todo el ruido se apaga por completo. Me invade una calma profunda.' },
+  { threshold: 80,  text: 'Tu alegría es mi paz absoluta. Nada más importa cuando te veo así de feliz.' },
+  { threshold: 100, text: 'Tu risa abierta detiene el tiempo por completo; eres mi hogar seguro y eterno.' },
 ];
 
 function getSmileMessage(level: number): string {
@@ -17,7 +19,6 @@ function getSmileMessage(level: number): string {
 
 const TICK_POSITIONS = [0, 20, 45, 75, 100];
 
-// ─── Onda SVG via rAF directo sobre refs ─────────────────────
 function PeacefulWave({ smileLevel }: { smileLevel: number }) {
   const offsetRef = useRef(0);
   const pathMainRef = useRef<SVGPathElement>(null);
@@ -99,12 +100,10 @@ function PeacefulWave({ smileLevel }: { smileLevel: number }) {
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────
 export default function SmileSlider() {
   const [smileLevel, setSmileLevel] = useState(0);
   const message = getSmileMessage(smileLevel);
 
-  // El fill del slider sigue al thumb sin delay
   const fillStyle = {
     width: `${smileLevel}%`,
   };
@@ -113,14 +112,11 @@ export default function SmileSlider() {
     <div className="w-full mt-16 space-y-12">
       <div className="space-y-4 max-w-md mx-auto relative">
         <div className="relative w-full h-8 flex items-center">
-          {/* Track base */}
           <div className="absolute w-full h-[2px] bg-[#2D1C22] rounded-full" />
-          {/* Fill sin transition — sigue instantáneamente */}
           <div
             className="absolute h-[2px] bg-gradient-to-r from-[#62464D] to-[#E8A598] rounded-full pointer-events-none"
             style={fillStyle}
           />
-          {/* Ticks */}
           {TICK_POSITIONS.map((pos) => (
             <div
               key={pos}
@@ -128,7 +124,6 @@ export default function SmileSlider() {
               style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}
             />
           ))}
-          {/* Input range encima de todo */}
           <input
             type="range"
             min={0}

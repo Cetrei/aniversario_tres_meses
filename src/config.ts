@@ -68,7 +68,7 @@ export const CONFIG: CoupleConfig = {
     to: "Jimena",
   },
 
-  anniversaryDate: "2026-03-28T00:00:00",
+  anniversaryDate: "2026-04-01T00:00:00",
 
   loveLetter: [
     "Hay algo profundamente hermoso en la forma en que decidimos entrelazar nuestras vidas. Sin prisas, sin pretensiones, simplemente dejando que la complicidad hiciera su trabajo en cada conversación y en cada silencio compartido.",

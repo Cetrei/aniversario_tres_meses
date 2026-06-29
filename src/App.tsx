@@ -11,24 +11,11 @@ function AmbientLights() {
     <>
       <div
         className="fixed top-[-8%] right-[-8%] w-[65vw] h-[65vw] rounded-full pointer-events-none z-0"
-        style={{
-          background: 'radial-gradient(circle, rgba(59,31,39,0.22) 0%, transparent 70%)',
-          filter: 'blur(120px)',
-        }}
+        style={{ background: 'radial-gradient(circle, rgba(59,31,39,0.22) 0%, transparent 70%)', filter: 'blur(120px)' }}
       />
       <div
         className="fixed top-[45%] left-[-18%] w-[55vw] h-[55vw] rounded-full pointer-events-none z-0"
-        style={{
-          background: 'radial-gradient(circle, rgba(232,165,152,0.09) 0%, transparent 70%)',
-          filter: 'blur(140px)',
-        }}
-      />
-      <div
-        className="fixed bottom-[10%] right-[5%] w-[40vw] h-[40vw] rounded-full pointer-events-none z-0"
-        style={{
-          background: 'radial-gradient(circle, rgba(180,80,100,0.07) 0%, transparent 70%)',
-          filter: 'blur(100px)',
-        }}
+        style={{ background: 'radial-gradient(circle, rgba(232,165,152,0.09) 0%, transparent 70%)', filter: 'blur(140px)' }}
       />
     </>
   );
@@ -36,171 +23,107 @@ function AmbientLights() {
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[#130D0F] text-[#EDE7E5] font-serif overflow-y-auto antialiased relative">
+    /* TRANSICIÓN SUAVE Y CONTROL DE SNAP PROFESIONAL */
+    <div className="w-full h-screen overflow-y-auto snap-y snap-mandatory scroll-smooth bg-[#130D0F] text-[#EDE7E5] font-serif hide-scrollbar relative">
       <AmbientLights />
 
-      {CONFIG.githubRepoUrl && (
-        <a
-          href={CONFIG.githubRepoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-full bg-white/5 border border-white/10 text-white/30 hover:text-white/70 hover:bg-white/10 transition-all duration-300 text-[10px] font-mono tracking-wider backdrop-blur-sm"
-          aria-label="Ver código fuente en GitHub"
-        >
-          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-          </svg>
-          <span className="hidden sm:inline">código fuente</span>
-        </a>
-      )}
-
-      <header className="absolute top-0 w-full z-40 px-6 py-8">
-        <div className="max-w-6xl mx-auto flex flex-col justify-center items-center gap-2">
-          <span className="text-lg sm:text-xl font-serif font-bold tracking-widest text-[#E8A598] uppercase">
-            {CONFIG.names.from}{' '}
-            <span className="font-light text-[#B59F9F] mx-2">y</span>{' '}
-            {CONFIG.names.to}
+      <header className="absolute top-0 w-full z-40 py-4">
+        <div className="max-w-6xl mx-auto flex flex-col justify-center items-center gap-1">
+          <span className="text-sm sm:text-base font-serif font-bold tracking-widest text-[#E8A598] uppercase">
+            {CONFIG.names.from} <span className="font-light text-[#B59F9F] mx-1">y</span> {CONFIG.names.to}
           </span>
-          <span className="text-[9px] tracking-widest text-[#62464D] uppercase font-mono">
-            Nuestra Historia Floreciente
-          </span>
+          <span className="text-[8px] tracking-widest text-[#62464D] uppercase font-mono">Nuestra Historia</span>
         </div>
       </header>
 
-      <main className="flex flex-col items-center w-full relative z-10">
-        
-        {/* SECCIÓN 1: Hero + Árbol de Sakura (Con Auto-Centrado) */}
-        <section className="relative w-full min-h-screen flex flex-col items-center justify-center pt-24 pb-12 px-6 snap-center snap-always">
-          <FadeInSection>
-            <div className="text-center space-y-4 max-w-3xl mx-auto relative z-10">
-              <span className="text-[#E8A598] text-sm italic font-light tracking-wide block">
-                Nuestros mundos coincidieron
-              </span>
-              <h1 className="text-3xl sm:text-5xl font-serif font-semibold tracking-tight leading-tight text-[#FFFDFD]">
-                Y desde entonces,{' '}
-                <br />
-                <em className="text-[#E8A598] font-normal">todo no hace más que florecer</em>
+      {/* SECCIÓN 1: Héroe + Árbol Orgánico en Crecimiento */}
+      <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <div className="w-full max-w-xl max-h-[82vh] flex flex-col items-center justify-between gap-y-4 mt-8">
+          <FadeInSection direction="up">
+            <div className="text-center space-y-1">
+              <span className="text-[#E8A598] text-xs italic font-light tracking-wide block">Nuestros mundos coincidieron...</span>
+              <h1 className="text-2xl sm:text-4xl font-serif font-semibold tracking-tight text-[#FFFDFD]">
+                Y desde entonces, <em className="text-[#E8A598] font-normal">todo florece</em>
               </h1>
-              <p className="text-[#B59F9F] text-sm sm:text-base font-sans font-light max-w-xl mx-auto">
-                Cada día que pasa a tu lado es una nueva hoja en esta historia que sigue creciendo de manera hermosa.
-              </p>
             </div>
           </FadeInSection>
-
-          <FadeInSection delay={300} className="w-full max-w-2xl mx-auto mt-6">
+          
+          <div className="w-full flex justify-center items-center min-h-0 flex-1">
             <SakuraTree anniversaryDate={CONFIG.anniversaryDate} />
-          </FadeInSection>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        {/* SECCIÓN 2: El Refugio de tu Risa */}
-        <section className="relative w-full min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center snap-center snap-always">
-          <FadeInSection>
-            <div className="space-y-4 max-w-2xl mx-auto mb-6">
-              <span className="text-[9px] font-mono tracking-widest text-[#62464D] uppercase block">
-                Interactivo · Desliza
-              </span>
-              <h2 className="text-2xl sm:text-4xl font-serif font-bold text-[#FFFDFD]">
-                El Refugio de tu Risa
-              </h2>
-              <p className="text-[#B59F9F] font-sans font-light text-sm sm:text-base">
-                Mi cabeza suele ir a mil por hora. Pero he descubierto que tienes el poder de calmar el océano entero. Mira cómo encuentro paz en ti:
-              </p>
+      {/* SECCIÓN 2: El Refugio de tu Risa */}
+      <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <div className="w-full max-w-xl max-h-[82vh] flex flex-col items-center justify-center gap-y-6">
+          <FadeInSection direction="up">
+            <div className="space-y-1 text-center">
+              <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase block">Interactivo · Desliza</span>
+              <h2 className="text-xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">El Refugio de tu Risa</h2>
             </div>
           </FadeInSection>
-
-          <FadeInSection delay={200} className="w-full max-w-xl mx-auto">
+          <div className="w-full min-h-0">
             <SmileSlider />
-          </FadeInSection>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        {/* SECCIÓN 3: La Buseta */}
-        <section className="relative w-full min-h-screen flex flex-col items-center justify-center px-6 py-12 snap-center snap-always">
-          <FadeInSection>
-            <div className="text-center space-y-4 max-w-2xl mx-auto mb-10">
-              <span className="text-[9px] font-mono tracking-widest text-[#62464D] uppercase block">
-                Interactivo · Toca a cada pasajero
-              </span>
-              <h2 className="text-2xl sm:text-4xl font-serif font-bold text-[#FFFDFD]">
-                Nuestra Escapada Favorita
-              </h2>
-              <p className="text-[#B59F9F] font-sans font-light text-sm sm:text-base">
-                No necesitamos un destino lujoso. Nuestro viaje ideal es al fondo de una buseta, compartiendo música y planeando el futuro con nuestra familia de animales.
-              </p>
+      {/* SECCIÓN 3: La Buseta */}
+      <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <div className="w-full max-w-2xl max-h-[85vh] flex flex-col items-center justify-center gap-y-4">
+          <FadeInSection direction="up">
+            <div className="text-center space-y-1">
+              <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase block">Interactivo</span>
+              <h2 className="text-xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">Nuestra Escapada Favorita</h2>
             </div>
           </FadeInSection>
-
-          <FadeInSection delay={150} className="w-full max-w-3xl mx-auto">
+          <div className="w-full min-h-0">
             <Buseta buseta={CONFIG.buseta} />
-          </FadeInSection>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        {/* SECCIÓN 4: Galería */}
-        <section className="relative w-full min-h-screen flex flex-col items-center justify-center px-6 py-12 snap-center snap-always">
-          <FadeInSection>
-            <div className="text-center space-y-3 mb-8">
-              <span className="text-[9px] font-mono tracking-widest text-[#62464D] uppercase block">
-                Galería · Toca para revelar
-              </span>
-              <h2 className="text-2xl sm:text-4xl font-serif font-bold text-[#FFFDFD]">
-                Nuestros Retazos
-              </h2>
-              <p className="text-[#B59F9F] font-sans font-light text-sm">
-                Instantes guardados con cuidado. Toca la fotografía para revelar el siguiente.
-              </p>
+      {/* SECCIÓN 4: Galería Retazos (Calce corregido) */}
+      <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <div className="w-full max-w-lg max-h-[82vh] flex flex-col items-center justify-center gap-y-2">
+          <FadeInSection direction="up">
+            <div className="text-center space-y-1">
+              <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase block">Galería</span>
+              <h2 className="text-xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">Nuestros Retazos</h2>
             </div>
           </FadeInSection>
-
-          <FadeInSection delay={200} className="w-full flex flex-col items-center max-w-2xl mx-auto">
+          <div className="w-full flex justify-center min-h-0 items-center">
             <Gallery photos={CONFIG.photos} />
-          </FadeInSection>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        {/* SECCIÓN 5: Carta de Amor */}
-        <section className="relative w-full min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center snap-center snap-always">
-          <FadeInSection className="w-full max-w-2xl mx-auto">
-            <div className="space-y-6">
-              <h2 className="text-xl sm:text-2xl font-serif text-[#E8A598] italic font-light">
-                Una nota al margen...
-              </h2>
-              <div className="space-y-4 text-[#EDE7E5] font-serif text-sm sm:text-base leading-relaxed font-light text-left max-h-[50vh] overflow-y-auto pr-2 hide-scrollbar">
-                {CONFIG.loveLetter.map((paragraph, i) => (
-                  <p key={i}>{paragraph}</p>
-                ))}
-              </div>
-              <p className="text-[#62464D] italic text-xs mt-4">
-                Escrito con todo el amor del mundo, para ti.
-              </p>
-            </div>
-          </FadeInSection>
-        </section>
+      {/* SECCIÓN 5: Carta de Amor */}
+      <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-6 text-center relative overflow-hidden">
+        <div className="w-full max-w-xl max-h-[75vh] flex flex-col justify-center space-y-4">
+          <h2 className="text-lg sm:text-xl font-serif text-[#E8A598] italic font-light">Una nota al margen...</h2>
+          <div className="space-y-4 text-[#EDE7E5] font-serif text-xs sm:text-sm leading-relaxed font-light text-left max-h-[45vh] overflow-y-auto pr-2 hide-scrollbar">
+            {CONFIG.loveLetter.map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        {/* SECCIÓN 6: Ruleta de Citas */}
-        <section className="relative w-full min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center snap-center snap-always">
-          <FadeInSection delay={100} className="w-full max-w-md mx-auto">
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <span className="text-[9px] font-mono tracking-widest text-[#62464D] uppercase block">
-                  Cupón de cita · Gira las veces que quieras
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">
-                  Dejemos que el destino decida
-                </h3>
-                <p className="text-[#B59F9F] font-sans font-light text-xs sm:text-sm">
-                  Tira hasta encontrar la que más te guste — y guárdala como cupón con ilustración en tu dispositivo.
-                </p>
-              </div>
-              <DateRoulette options={CONFIG.dateIdeas} />
-            </div>
-          </FadeInSection>
-        </section>
+      {/* SECCIÓN 6: Ruleta de Citas */}
+      <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 text-center relative overflow-hidden">
+        <div className="w-full max-w-md max-h-[80vh] flex flex-col justify-center items-center gap-y-4">
+          <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#FFFDFD]">Dejemos que el destino decida</h3>
+          <div className="w-full min-h-0">
+            <DateRoulette options={CONFIG.dateIdeas} />
+          </div>
+        </div>
+      </section>
 
-      </main>
-
-      <footer className="w-full py-8 text-center relative z-10 bg-[#130D0F]">
-        <p className="text-[9px] text-[#3C282D] tracking-widest uppercase font-mono font-light">
+      <footer className="w-full py-4 text-center shrink-0 snap-end bg-[#130D0F]">
+        <p className="text-[8px] text-[#3C282D] tracking-widest uppercase font-mono font-light">
           © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
-          <br />
-          <span className="text-[#2D1C22]">Un diseño infinito · 🌸</span>
         </p>
       </footer>
     </div>
