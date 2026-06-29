@@ -1,14 +1,14 @@
 image:
-  inputLayout: D:\Projects\Personal\tercer_aniversario\public\QRLayout.png
-  output: D:\Projects\Personal\tercer_aniversario\public\output\QR.jpg
+  inputLayout: D:\Projects\Personal\tercer_aniversario\assets\QRLayout.png
+  output: D:\Projects\Personal\tercer_aniversario\assets\QR.png
 
 qr:
-  url: ""
+  url: https://aniversario-tres-meses.pages.dev
 
-  size: 350
+  size: 580
   position:
-    x: 679
-    y: 425
+    x: 567
+    y: 395
 
   correction: H
   colors:
@@ -22,7 +22,7 @@ qr:
 
   logo:
     enabled: true
-    image: D:\Projects\Personal\tercer_aniversario\public\QRIcon.jpg
-    size: 64
+    image: D:\Projects\Personal\tercer_aniversario\assets\QRIcon.png
+    size: 200
     padding: 10
     backgroundColor: "#FFFFFF"

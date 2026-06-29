@@ -323,7 +323,7 @@ export default function DateRoulette({ options }: DateRouletteProps) {
 
             {/* Lista de selección manual */}
             {showManual && (
-              <div className="w-full mt-2 space-y-2">
+              <div className="w-full mt-2 max-h-[40vh] overflow-y-auto space-y-2 roulette-manual-scrollbar pr-1">
                 {options.map((opt, i) => (
                   <button
                     key={i}

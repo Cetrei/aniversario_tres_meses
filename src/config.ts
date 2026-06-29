@@ -67,6 +67,28 @@ export interface LoveLetter {
 
 export interface SakuraTreeConfig {
   /**
+   * Tamaño base de los pétalos que caen (radio máximo en px del canvas).
+   * El tamaño real varía entre petalSize * 0.6 y petalSize * 1.4 para dar variedad.
+   * Rango útil: 2–6. Default: 3.5.
+   */
+  fallingPetalSize: number;
+
+  /**
+   * Radio base de las flores en la copa (en unidades internas del canvas).
+   * Las flores individuales varên entre flowerRadius y flowerRadius * 2.5.
+   * Rango útil: 2–8. Default: 4.
+   */
+  flowerRadius: number;
+
+  /**
+   * Desde qué altura del canvas caen los pétalos, como fracción de la altura total.
+   * 0.0 = borde superior, 0.5 = horizonte (mitad del canvas).
+   * El rango de spawn es entre este valor y este valor + 0.35.
+   * Rango útil: 0.02–0.20. Default: 0.05.
+   */
+  petalSpawnHeightFraction: number;
+
+  /**
    * Unidad de tiempo para los pétalos cayendo.
    * 'minute' → 1 pétalo por cada minuto de relación acumulado.
    * 'hour'   → 1 pétalo por cada hora de relación acumulada.
@@ -118,6 +140,13 @@ export interface SakuraTreeConfig {
   trunkInitialWidth: number;
 
   /**
+   * Ruta relativa a /public de una imagen que muestra el árbol en su máximo desarrollo.
+   * Se muestra en el panel de información del árbol (botón "!").
+   * Ejemplo: "/images/arbol_maduro.webp". Dejar vacío ("") si no hay imagen.
+   */
+  treeMaxImage: string;
+
+  /**
    * Longitud inicial de las raíces del árbol maduro.
    * Rango útil: 100–180. Default: 140.
    */
@@ -147,42 +176,52 @@ export const CONFIG: CoupleConfig = {
   githubRepoUrl: "https://github.com/Cetrei/tercer_aniversario_-3",
 
   sakuraTree: {
+    // Tamaño de los pétalos que caen (radio base en px)
+    fallingPetalSize: 2.5,
+    // Radio base de las flores en la copa (unidades internas)
+    flowerRadius: 5,
+    // Altura desde donde caen los pétalos (0.0=top, 0.5=horizonte)
+    petalSpawnHeightFraction: 0.2,
     // 'minute' = 1 pétalo por minuto | 'hour' = 1 pétalo por hora de relación
-    petalUnit: 'minute',
+    petalUnit: 'hour',
     // Techo de pétalos cayendo (se alcanza a los 50+ años)
-    maxFallingPetals: 150,
+    maxFallingPetals: 120,
     // Ramas de la copa
     maxBranchDepth: 9,
     // Raíces profundas (invisibles hoy, espectaculares a futuro)
-    maxRootDepth: 7,
+    maxRootDepth: 8,
     // Flores en la copa del árbol maduro
-    totalFlowerSeeds: 350,
+    totalFlowerSeeds: 5000,
     // Proporciones del árbol maduro
     trunkInitialLength: 145,
     trunkInitialWidth: 24,
-    rootInitialLength: 140,
-    rootInitialWidth: 20,
+    rootInitialLength: 160,
+    rootInitialWidth: 26,
+    // Imagen del árbol en su máximo desarrollo (dejar vacío si no hay)
+    treeMaxImage: "",
   },
 
   names: {
     from: "Joanfer",
-    to: "Jimena",
+    to: "Mamor 💗",
   },
 
-  anniversaryDate: "1970-04-01T00:00:00",
+  anniversaryDate: "1960-04-01T00:00:00",
 
-  loveLetter: {
-    place: "San José, 1 de julio de 2026",
-    to: "Jimena",
-    greeting: "Mi Jimena bonita,",
-    body: [
-      "Hay algo profundamente hermoso en la forma en que decidimos entrelazar nuestras vidas. Sin prisas, sin pretensiones, simplemente dejando que la complicidad hiciera su trabajo en cada conversación y en cada silencio compartido.",
-      "Llevamos apenas tres meses, pero se sienten repletos de pequeñas certezas. Se sienten en la calidez de tu mano cuando caminamos sin rumbo, en la manera en que tus ojos iluminan los detalles que nadie más nota, y en ese plan absurdamente tierno de meter toda nuestra vida futura en una buseta.",
-      "Este espacio es un reflejo de nosotros: inmensamente suave por dentro. Gracias por ser mi lugar seguro, mi mejor coincidencia y la persona con la que quiero seguir recorriendo el camino.",
+"loveLetter": {
+    "place": "San José, 1 de julio de 2026",
+    "to": "Jimena",
+    "greeting": "Mi Enana Preciosa,",
+    "body": [
+      "Hay algo profundamente hermoso en la forma en que decidimos entrelazar nuestras vidas. Sin prisas, sin pretensiones, simplemente dejando que la complicidad hiciera su trabajo. Llevamos apenas tres meses juntos, pero nunca en mi vida había sentido tantas cosas y tan fuerte por alguien; de hecho, en vez de tres meses, yo diría que ya han sido tres vidas a tu lado. Te amo más que a nada en este mundo y me llena de emoción todo lo que viene para nosotros.",
+      "Adoro y me encanta la relación que hemos construido, tan llena de amor, respeto, confianza, comunicación y felicidad. Me fascina pasar casi todos los días contigo, le guste a quien le guste. Eres mi mejor amiga, mi compañera, mi novia, mi esposa, mi hermana... eres absolutamente todo para mí y siempre seguirá siendo así. Por eso te dedico este regalo especial, usando mis talentos y lo que sé hacer (programar) para demostrarte lo mucho que te amo.",
+      "Deseo con todo mi corazón pasar el resto de nuestras vidas juntos, formar una familia, tener miles de aventuras y llegar a la vejez felices de mirar atrás y ver todo lo que vivimos. En este universo no existe una mujer como tu, eres demasiado especial para mí; tu corazón noble, la forma en que me amás y cómo me hacés sentir me dan la certeza de que somos almas gemelas y que tu y nadie más, eres amor de mi vida.",
+      "Siempre te amaré, incluso después de mi muerte. Con más razón me gusta creer en el cielo, porque la sola idea de tener que despedirme de ti algún día... es simplemente insoportable. Gracias por ser mi lugar seguro, mi mejor coincidencia, mi todo, y la persona con la que quiero seguir recorriendo el camino.",
+      "Este espacio es un reflejo de nosotros: inmensamente suave por dentro."
     ],
-    farewell: "Con todo mi amor,",
-    signature: "Joanfer",
-    signatureImage: "/images/ositos.webp",
+    "farewell": "Con todo mi amor para mamor,",
+    "signature": "Joanfer",
+    "signatureImage": "/images/firma.webp"
   },
 
   photos: [
@@ -194,47 +233,47 @@ export const CONFIG: CoupleConfig = {
     {
       url: "/images/ComiendoEnLaPlaya.webp",
       displayName: "Comiendo en la playa",
-      caption: "Cuando la sal del mar sabe mejor si la compartes.",
+      caption: "Ese dia descubri que la arean y sal de mar sabe mejor en compañia y que el mar quiere mi culito🥀",
     },
     {
       url: "/images/CuandoNosDormimosRiquisimo.webp",
       displayName: "Dormidos riquísimo",
-      caption: "El sueño más dulce que he tenido con compañía.",
+      caption: "El sueño más dulce que he tenido con compañía, siendo atacado por hormigas, moscas y bajo la lluvia, de todas formas cai",
     },
     {
       url: "/images/Cumplinedo20ConMamor.webp",
       displayName: "Cumpleaños 20 con mamor",
-      caption: "Veinte, y ya sé exactamente con quién quiero celebrar el resto de.",
+      caption: "Veinte, y ya sé exactamente con quién quiero celebrar el resto de mis cumpleaños",
     },
     {
       url: "/images/LaCitaEnElParque.webp",
       displayName: "La cita en el parque",
-      caption: "El pasto, el cielo abierto y tú. Más no se necesitaba.",
+      caption: "Mi favorita, me senti muy chineado y especiaal, me invitaste a comer cositas deliciosas que para otros podrian parecer simples, nunca lo olvidare",
     },
     {
       url: "/images/LaGranPuta.webp",
-      displayName: "La gran escapada",
-      caption: "Ese día en que nos perdimos y resultó que era el plan perfecto.",
+      displayName: "Una de tus tantas reacciones",
+      caption: "Me rei mucho al verte trabada, lo expresiva que eres es de lo que más amo de ti, me traes alegria y carcajadas con tu forma de ser",
     },
     {
       url: "/images/ManitoJaguarRodando.webp",
       displayName: "Manito Jaguar rodando",
-      caption: "Tu manito sobre la mía mientras el mundo pasaba por la ventana.",
+      caption: "Gorditos y bonitos, me dejaste super llenito ese dia, me hizo notar lo mucho que me cuidas y tu emocion por verme disfrutarlo fue 💗",
     },
     {
       url: "/images/Mimidazzz.webp",
       displayName: "Mimidazzz",
-      caption: "Dormida, con esa paz que me contagias hasta en sueños.",
+      caption: "Dormida, con esa paz que me contagias hasta en sueños",
     },
     {
       url: "/images/OjitosVoid.webp",
       displayName: "Ojitos void",
-      caption: "Esa mirada que me hace olvidar lo que iba a decir.",
+      caption: "La mirada que tanto amas y quieres de foto de perfil, es increible lo feliz que me hace tener una foto absurda como esa contigo",
     },
     {
       url: "/images/PrimeraSalidaFamiliarSinedoMamor.webp",
       displayName: "Primera salida familiar",
-      caption: "La primera salida familiar sin edos. Histórico.",
+      caption: "Me encanto poder apreciar lo hermoso que es tenerte ahora a mi lado al convivir con mi familia, todo es mucho mejor y nunca lo imagine",
     },
     {
       url: "/images/PrimerasVisitasALaUNA.webp",

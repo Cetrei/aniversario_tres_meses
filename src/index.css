@@ -112,6 +112,25 @@
     background: rgba(180, 140, 200, 0.55);
   }
 
+  /* Scrollbar sutil para la lista manual de la ruleta */
+  .roulette-manual-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(78, 49, 60, 0.45) transparent;
+  }
+  .roulette-manual-scrollbar::-webkit-scrollbar {
+    width: 3px;
+  }
+  .roulette-manual-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .roulette-manual-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(78, 49, 60, 0.45);
+    border-radius: 99px;
+  }
+  .roulette-manual-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(232, 165, 152, 0.35);
+  }
+
   @keyframes bounceSlow {
     0%, 100% { transform: translateY(0); opacity: 0.6; }
     50% { transform: translateY(6px); opacity: 1; }

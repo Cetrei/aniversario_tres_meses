@@ -7,6 +7,27 @@ import Buseta from './components/Buseta';
 import Gallery from './components/Gallery';
 import DateRoulette from './components/DateRoulette';
 
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function getMonthsElapsed(startDate: string): number {
+  const start = new Date(startDate);
+  const now = new Date();
+  return (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+}
+
+function getMonthLabel(months: number): string {
+  if (months < 12) return months === 1 ? 'mes' : 'meses';
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (rem === 0) return years === 1 ? 'año' : 'años';
+  return `${years} ${years === 1 ? 'año' : 'años'} y ${rem} ${rem === 1 ? 'mes' : 'meses'}`;
+}
+
+function getMonthNumber(months: number): string {
+  if (months < 12) return String(months);
+  const years = Math.floor(months / 12);
+  return String(years);
+}
+
 // ─── PANTALLA DE INTRO CINEMATOGRÁFICA ───────────────────────────────────────
 // Secuencia de palabras que aparecen y desaparecen antes de revelar el sitio
 const INTRO_STEPS = [
@@ -294,14 +315,14 @@ export default function App() {
             <FadeInSection direction="up" delay={260}>
               <div className="space-y-1">
                 <p className="text-[#E8A598] text-sm sm:text-base italic font-light tracking-wide">Felices</p>
-                <h1 className="text-7xl sm:text-9xl font-serif font-bold text-[#FFFDFD] leading-none tracking-tighter">3</h1>
-                <p className="text-2xl sm:text-3xl font-serif font-light text-[#E8A598] tracking-wide">meses</p>
+                <h1 className="text-7xl sm:text-9xl font-serif font-bold text-[#FFFDFD] leading-none tracking-tighter">{getMonthNumber(getMonthsElapsed(CONFIG.anniversaryDate))}</h1>
+                <p className="text-2xl sm:text-3xl font-serif font-light text-[#E8A598] tracking-wide">{getMonthLabel(getMonthsElapsed(CONFIG.anniversaryDate))}</p>
               </div>
             </FadeInSection>
 
             <FadeInSection direction="up" delay={480}>
               <p className="text-[#B59F9F] font-serif font-light text-sm sm:text-base leading-relaxed max-w-sm">
-                Tres meses que se sienten como una vida entera,<br className="hidden sm:block" /> y a la vez como si apenas empezáramos.
+                {(() => { const m = getMonthsElapsed(CONFIG.anniversaryDate); const l = getMonthLabel(m); return l.includes('año') ? `${l.charAt(0).toUpperCase() + l.slice(1)} que se sienten como toda una vida,` : `${l.charAt(0).toUpperCase() + l.slice(1)} que se sienten como una vida entera,`; })()}<br className="hidden sm:block" /> y a la vez como si apenas empezáramos.
               </p>
             </FadeInSection>
 
@@ -327,8 +348,8 @@ export default function App() {
         </section>
 
         {/* ── SECCIÓN 1: Árbol Sakura ────────────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-start shrink-0 snap-start snap-always px-4 relative overflow-hidden pt-20">
-          <div className="w-full max-w-xl flex flex-col items-center gap-y-6 h-full">
+        <section className="w-full h-screen flex flex-col items-center justify-start shrink-0 snap-start snap-always px-4 relative overflow-hidden pt-16 sm:pt-20">
+          <div className="w-full max-w-xl flex flex-col items-center gap-y-4 sm:gap-y-10 h-full">
             <FadeInSection direction="down" delay={0}>
               <div className="text-center space-y-1 relative z-10">
                 <span className="text-[#E8A598] text-xs italic font-light tracking-wide block">Nuestros mundos coincidieron...</span>
@@ -578,7 +599,7 @@ export default function App() {
           </div>
         </section>
 
-        <footer className="w-full py-4 text-center shrink-0 snap-end bg-[#130D0F]">
+        <footer className="w-full py-5 sm:py-4 text-center shrink-0 snap-end bg-[#130D0F]">
           <p className="text-[8px] text-[#3C282D] tracking-widest uppercase font-mono font-light">
             © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
           </p>

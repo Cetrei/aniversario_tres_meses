@@ -56,7 +56,7 @@ export default function Buseta({ buseta }: BusetaProps) {
   const [selected, setSelected] = useState<PassengerEntry>(buseta.pilot);
 
   return (
-    <div className="grid md:grid-cols-2 gap-8 lg:gap-20 items-center w-full">
+    <div className="flex flex-col md:grid md:grid-cols-2 gap-4 md:gap-8 lg:gap-20 items-center w-full">
       {/* Plano de la buseta */}
       <div className="flex justify-center">
         <div
@@ -133,31 +133,31 @@ export default function Buseta({ buseta }: BusetaProps) {
       </div>
 
       {/* Descripción del pasajero */}
-      <div className="space-y-6">
+      <div className="w-full">
         <div
           key={selected.name}
-          className="space-y-4 text-center md:text-left animate-fade-in-up"
+          className="space-y-2 md:space-y-4 text-center md:text-left animate-fade-in-up"
         >
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
+          <div className="flex flex-row md:flex-row items-center gap-3 md:gap-4 justify-center md:justify-start">
             {selected.image ? (
               <img
                 src={selected.image}
                 alt={selected.name}
-                className="w-16 h-16 object-cover rounded-full ring-2 ring-[#E8A598]/30"
+                className="w-10 h-10 md:w-16 md:h-16 flex-shrink-0 object-cover rounded-full ring-2 ring-[#E8A598]/30"
               />
             ) : (
-              <span className="text-5xl leading-none">{selected.icon}</span>
+              <span className="text-3xl md:text-5xl leading-none flex-shrink-0">{selected.icon}</span>
             )}
             <div>
-              <span className="text-xs font-mono italic text-[#B59F9F] block">
+              <span className="text-[10px] md:text-xs font-mono italic text-[#B59F9F] block">
                 {selected.role}
               </span>
-              <h4 className="text-3xl font-serif font-bold text-[#FFFDFD] mt-1">
+              <h4 className="text-xl md:text-3xl font-serif font-bold text-[#FFFDFD] mt-0.5 md:mt-1">
                 {selected.name}
               </h4>
             </div>
           </div>
-          <p className="text-lg text-[#B59F9F] leading-relaxed font-serif italic">
+          <p className="text-sm md:text-lg text-[#B59F9F] leading-relaxed font-serif italic line-clamp-4 md:line-clamp-none">
             "{selected.desc}"
           </p>
         </div>

@@ -8,6 +8,11 @@ Un regalo especial para la mujer más especial
 pnpm run dev
 ```
 
+### Deploy
+```bash
+pnpm run deploy
+```
+
 ### Calcular Centro para QR
 ```bash
 uv run find-center packages/QrGenerator/config.yml

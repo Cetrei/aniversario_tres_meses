@@ -129,15 +129,23 @@ function calculateGrowths(startDate: string): { branchGrowth: number; rootGrowth
 
 /**
  * Cuántos pétalos deben caer ahora.
- * Con petalUnit='minute': 1 pétalo por minuto de relación (limitado por maxFallingPetals).
- * Con petalUnit='hour':   1 pétalo por hora.
+ * Usa una curva suavizada (raíz cúbica) para que en los primeros meses sean muy pocos
+ * y aumente de forma gradual y natural conforme pasan los años.
+ * - 3 meses (2160h)  → ~4–6 pétalos
+ * - 1 año (8760h)   → ~10–14 pétalos
+ * - 5 años           → ~30–45 pétalos
+ * - 50 años          → maxFallingPetals
  */
 function calculateActivePetals(startDate: string, petalUnit: 'minute' | 'hour', maxFallingPetals: number): number {
   const totalMs = Math.max(0, Date.now() - new Date(startDate).getTime());
   const units = petalUnit === 'minute'
     ? Math.floor(totalMs / 60_000)
     : Math.floor(totalMs / 3_600_000);
-  return clamp(units, 1, maxFallingPetals);
+  // Referencia: 50 años en la unidad dada (para escalar al máximo)
+  const fiftyYearsUnits = petalUnit === 'minute' ? 50 * 365 * 24 * 60 : 50 * 365 * 24;
+  // Raíz cúbica normalizada: crece rápido al principio pero se aplana suavemente
+  const normalized = Math.pow(Math.min(units / fiftyYearsUnits, 1), 1 / 3);
+  return clamp(Math.floor(normalized * maxFallingPetals), 1, maxFallingPetals);
 }
 
 function calculateElapsedTime(startDate: string): ElapsedTime {
@@ -151,9 +159,9 @@ function calculateElapsedTime(startDate: string): ElapsedTime {
 }
 
 /**
- * Genera raíces que salen horizontalmente desde la base del tronco,
- * sin tronco central invertido. Cada raíz principal arranca con un
- * ángulo casi horizontal y se curva hacia abajo progresivamente.
+ * Genera raíces que salen desde la base del tronco, siempre hacia abajo y hacia los lados.
+ * Las raíces principales arrancan casi horizontales y se curvan progresivamente hacia abajo.
+ * Nunca tienen un tronco central invertido — cada raíz es independiente desde el origen.
  */
 function growRoots(params: {
   maxDepth: number;
@@ -164,51 +172,69 @@ function growRoots(params: {
   const { maxDepth, initialLength, initialWidth, seedOffset } = params;
   const segments: SkeletonSegment[] = [];
   const tips: { x: number; y: number }[] = [];
-  let seed = seedOffset;
 
-  // Número de raíces principales que salen de la base
-  const ROOT_COUNT = 5;
+  // 7 raíces principales: distribuidas simétricamente con variación
+  const ROOT_COUNT = 7;
 
-  function growBranch(x: number, y: number, angleDeg: number, length: number, width: number, depth: number, parentBirth: number): void {
+  function growBranch(
+    x: number, y: number,
+    angleDeg: number,
+    length: number, width: number,
+    depth: number, parentBirth: number,
+    localSeed: number
+  ): void {
+    let s = localSeed;
     const angleRad = (angleDeg * Math.PI) / 180;
-    // direction -1 = crece hacia abajo
     const x2 = x + Math.cos(angleRad) * length;
-    const y2 = y + Math.sin(angleRad) * length;
+    // y siempre crece positivo (hacia abajo/tierra)
+    const y2 = y + Math.abs(Math.sin(angleRad)) * length;
 
-    const jitter = (seededRandom(seed++) - 0.5) * width * 1.4;
+    const jitter = (seededRandom(s++) - 0.5) * width * 1.2;
     const cpx = (x + x2) / 2 + jitter;
-    const cpy = (y + y2) / 2 + seededRandom(seed++) * width * 0.6;
-    const birth = depth === 0 ? 0 : clamp(parentBirth + 0.05 + seededRandom(seed++) * 0.07, 0, 0.93);
+    // El punto de control siempre empuja hacia abajo para curvar las raíces naturalmente
+    const cpy = (y + y2) / 2 + seededRandom(s++) * width * 1.8;
+    const birth = depth === 0 ? 0 : clamp(parentBirth + 0.06 + seededRandom(s++) * 0.08, 0, 0.93);
 
     segments.push({ x1: x, y1: y, x2, y2, cpx, cpy, width, depth, birth });
 
-    if (depth >= maxDepth || length < 5) {
+    if (depth >= maxDepth || length < 6) {
       tips.push({ x: x2, y: y2 });
       return;
     }
 
-    // Cada bifurcación añade más ángulo hacia abajo
-    const spreadDown = 18 + depth * 4 + seededRandom(seed++) * 10;
-    const lengthRatio = 0.68 - depth * 0.01;
-    const widthRatio = 0.62;
-    const spawnsThird = depth < 2 && seededRandom(seed++) > 0.55;
+    // Bifurcación: una rama continúa más o menos en el mismo ángulo (lateral)
+    // y otra gira más hacia abajo. Esto da aspecto de raigones, no de árbol invertido.
+    const turnDown = 20 + depth * 6 + seededRandom(s++) * 12;
+    const spreadLateral = 6 + seededRandom(s++) * 10;
+    const lengthRatio = 0.70 - depth * 0.006;  // ramas más largas que el original
+    const widthRatio = 0.65;                    // más gruesas en relación
+    const spawnsThird = depth < 3 && seededRandom(s++) > 0.45; // más trifurcaciones
+
+    // Rama que sigue lateral (poco ángulo adicional)
+    growBranch(x2, y2, angleDeg + spreadLateral * Math.sign(x2), length * lengthRatio * 0.9, width * widthRatio, depth + 1, birth, s * 7 + 3);
+    // Rama que gira hacia abajo (más profunda)
+    const downAngle = clamp(angleDeg + turnDown * (angleDeg >= 90 ? -0.3 : 0.3), 5, 175);
+    growBranch(x2, y2, downAngle, length * lengthRatio, width * widthRatio, depth + 1, birth, s * 13 + 7);
 
     if (spawnsThird) {
-      growBranch(x2, y2, angleDeg + seededRandom(seed++) * 8, length * lengthRatio * 0.88, width * widthRatio, depth + 1, birth);
+      // Tercera rama: va mucho más hacia abajo
+      const deepAngle = clamp(angleDeg + turnDown * (angleDeg >= 90 ? -0.7 : 0.7), 10, 170);
+      growBranch(x2, y2, deepAngle, length * lengthRatio * 0.75, width * widthRatio * 0.85, depth + 1, birth, s * 19 + 11);
     }
-    growBranch(x2, y2, angleDeg - spreadDown * 0.4, length * lengthRatio, width * widthRatio, depth + 1, birth);
-    growBranch(x2, y2, angleDeg + spreadDown, length * lengthRatio, width * widthRatio, depth + 1, birth);
   }
 
   for (let i = 0; i < ROOT_COUNT; i++) {
-    // Distribuye las raíces: izquierda, derecha, y algunas intermedias
-    // Ángulos: ~15° a ~80° desde la horizontal, alternando lados
+    // Distribuye: izq muy lateral, izq intermedia, centro-izq, centro-der, der intermedia, der muy lateral
+    // Ángulos desde horizontal: ~12°–75° en cada lado
     const side = i % 2 === 0 ? 1 : -1;
-    const baseAngle = 20 + (Math.floor(i / 2)) * 22 + seededRandom(seedOffset + i * 37) * 10;
+    const rank = Math.floor(i / 2); // 0=más lateral, 1=intermedia, 2=casi centro
+    const baseAngle = 12 + rank * 22 + seededRandom(seedOffset + i * 41) * 10;
+    // Los ángulos de 0°=derecha, 90°=abajo, 180°=izquierda en el sistema de la raíz
     const startAngle = side > 0 ? baseAngle : 180 - baseAngle;
-    const rootSeed = seedOffset + i * 500;
-    seed = rootSeed;
-    growBranch(0, 0, startAngle, initialLength * (0.85 + seededRandom(rootSeed) * 0.3), initialWidth * (0.7 + seededRandom(rootSeed + 1) * 0.3), 0, 0);
+    const rootSeed = seedOffset + i * 700;
+    const rootLength = initialLength * (0.9 + seededRandom(rootSeed) * 0.35);
+    const rootWidth = initialWidth * (0.75 + seededRandom(rootSeed + 1) * 0.25);
+    growBranch(0, 0, startAngle, rootLength, rootWidth, 0, 0, rootSeed + 100);
   }
 
   return { segments, tips };
@@ -258,7 +284,7 @@ function growBranches(params: {
   grow(0, 0, 90, initialLength, initialWidth, 0, 0);
   return { segments, tips };
 }
-function growFlowers(branches: SkeletonSegment[], tips: { x: number; y: number }[], targetCount: number, seedOffset: number): FlowerSeed[] {
+function growFlowers(branches: SkeletonSegment[], tips: { x: number; y: number }[], targetCount: number, seedOffset: number, flowerRadius: number): FlowerSeed[] {
   const outerBranches = branches.filter((branch) => branch.depth >= 3);
   const pool = outerBranches.length > 0 ? outerBranches : branches;
   const flowers: FlowerSeed[] = [];
@@ -283,8 +309,8 @@ function growFlowers(branches: SkeletonSegment[], tips: { x: number; y: number }
     flowers.push({
       x,
       y,
-      radius: 3 + seededRandom(seed * 7) * 4.5,
-      birth: clamp(0.55 + seededRandom(seed * 8) * 0.27, 0, 0.82),
+      radius: flowerRadius + seededRandom(seed * 7) * flowerRadius * 1.5,
+      birth: clamp(0.56 + seededRandom(seed * 8) * 0.22, 0, 0.78),
       swayPhase: seededRandom(seed * 9) * Math.PI * 2,
       swaySpeed: 0.3 + seededRandom(seed * 10) * 0.35,
       warmth: seededRandom(seed * 11),
@@ -298,7 +324,7 @@ function growFlowers(branches: SkeletonSegment[], tips: { x: number; y: number }
 function buildTreeStructure(cfg: SakuraTreeConfig): TreeStructure {
   const trunk = growBranches({ maxDepth: cfg.maxBranchDepth, initialLength: cfg.trunkInitialLength, initialWidth: cfg.trunkInitialWidth, seedOffset: 17 });
   const roots = growRoots({ maxDepth: cfg.maxRootDepth, initialLength: cfg.rootInitialLength, initialWidth: cfg.rootInitialWidth, seedOffset: 941 });
-  const flowers = growFlowers(trunk.segments, trunk.tips, cfg.totalFlowerSeeds, 311);
+  const flowers = growFlowers(trunk.segments, trunk.tips, cfg.totalFlowerSeeds, 311, cfg.flowerRadius);
 
   let left = 0;
   let right = 0;
@@ -480,15 +506,16 @@ function drawFlowers(ctx: CanvasRenderingContext2D, flowers: FlowerSeed[], growt
   }
 }
 
-function createFallingPetal(width: number, height: number, seed: number): FallingPetal {
-  // Nace en la zona de la copa: entre el 5% y el 45% superior del canvas
-  const spawnY = height * (0.05 + seededRandom(seed * 2) * 0.40);
+function createFallingPetal(width: number, height: number, seed: number, petalSize: number, spawnFraction: number): FallingPetal {
+  const maxSpawn = Math.min(spawnFraction + 0.35, 0.48);
+  const spawnY = height * (spawnFraction + seededRandom(seed * 2) * (maxSpawn - spawnFraction));
+  const sizeVariance = petalSize * 0.6 + seededRandom(seed * 5) * petalSize * 0.8;
   return {
     x: width * (0.15 + seededRandom(seed) * 0.70),
     y: spawnY,
     vy: 18 + seededRandom(seed * 3) * 20,
     vx: -8 + seededRandom(seed * 4) * 16,
-    size: 2.5 + seededRandom(seed * 5) * 3,
+    size: sizeVariance,
     rotation: seededRandom(seed * 6) * Math.PI * 2,
     rotationSpeed: -1.2 + seededRandom(seed * 7) * 2.4,
     swayPhase: seededRandom(seed * 8) * Math.PI * 2,
@@ -504,7 +531,9 @@ function updateAndDrawPetals(
   width: number,
   height: number,
   deltaSeconds: number,
-  time: number
+  time: number,
+  petalSize: number,
+  spawnFraction: number
 ): void {
   // El horizonte (suelo) está en la mitad del canvas.
   // Los pétalos solo caen hasta ahí y se desvanecen en los últimos 30% de su recorrido.
@@ -523,7 +552,7 @@ function updateAndDrawPetals(
     const reachedGround = petal.y >= horizonY;
     const leftViewport = petal.x < -20 || petal.x > width + 20;
     if (reachedGround || leftViewport) {
-      const respawned = createFallingPetal(width, height, Math.random() * 10_000);
+      const respawned = createFallingPetal(width, height, Math.random() * 10_000, petalSize, spawnFraction);
       petal.x = respawned.x;
       petal.y = respawned.y;
       petal.vy = respawned.vy;
@@ -559,13 +588,16 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
   const animationFrameRef = useRef<number>(0);
   const structureRef = useRef<TreeStructure>(buildTreeStructure(treeConfig));
   const petalsRef = useRef<FallingPetal[]>(
-    Array.from({ length: treeConfig.maxFallingPetals }, (_, i) => createFallingPetal(400, 400, i + 1))
+    Array.from({ length: treeConfig.maxFallingPetals }, (_, i) =>
+      createFallingPetal(400, 400, i + 1, treeConfig.fallingPetalSize, treeConfig.petalSpawnHeightFraction)
+    )
   );
   const metricsRef = useRef<CanvasMetrics>({ width: 0, height: 0, dpr: 1, scale: 1 });
   const lastTimestampRef = useRef<number | null>(null);
   const clockRef = useRef(0);
 
   const [elapsed, setElapsed] = useState<ElapsedTime>(() => calculateElapsedTime(startDate));
+  const [showInfo, setShowInfo] = useState(false);
 
   // Reloj en tiempo real para el contador visible (Días, Horas, Minutos, Segundos)
   useEffect(() => {
@@ -610,56 +642,129 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    const renderFrame = (timestamp: number) => {
-      const deltaSeconds = lastTimestampRef.current === null ? 0 : Math.min(0.05, (timestamp - lastTimestampRef.current) / 1000);
-      lastTimestampRef.current = timestamp;
-      clockRef.current += deltaSeconds;
+    // Defer el inicio del bucle para no bloquear el paint inicial tras la transición
+    let startTimer: ReturnType<typeof setTimeout>;
+    const begin = () => {
+      const renderFrame = (timestamp: number) => {
+        const deltaSeconds = lastTimestampRef.current === null ? 0 : Math.min(0.05, (timestamp - lastTimestampRef.current) / 1000);
+        lastTimestampRef.current = timestamp;
+        clockRef.current += deltaSeconds;
 
-      const { width, height, dpr, scale } = metricsRef.current;
-      if (width === 0 || height === 0) {
+        const { width, height, dpr, scale } = metricsRef.current;
+        if (width === 0 || height === 0) {
+          animationFrameRef.current = requestAnimationFrame(renderFrame);
+          return;
+        }
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        const { branchGrowth, rootGrowth } = calculateGrowths(startDate);
+        const horizonY = height / 2;
+        const centerX = width / 2;
+        const structure = structureRef.current;
+
+        drawBackground(ctx, width, height);
+        drawGrassLine(ctx, width, horizonY);
+
+        ctx.save();
+        ctx.translate(centerX, horizonY);
+        ctx.scale(scale, scale);
+
+        // Raíces: solo se dibujan si rootGrowth > 0, y clipadas al área de tierra (bajo el horizonte)
+        if (rootGrowth > 0) {
+          ctx.save();
+          // Clip: solo la mitad inferior (tierra). En coordenadas locales y=0 es el horizonte.
+          ctx.beginPath();
+          ctx.rect(-width / scale, 0, (width / scale) * 2, height / scale);
+          ctx.clip();
+          const deepestRootY = structure.roots.reduce((deepest, segment) => Math.max(deepest, segment.y2), 40);
+          drawRootGlow(ctx, 0, deepestRootY * 0.85, deepestRootY * 0.7, rootGrowth);
+          drawSkeleton(ctx, structure.roots, rootGrowth, true, treeConfig.maxRootDepth);
+          ctx.restore();
+        }
+        drawSkeleton(ctx, structure.branches, branchGrowth, false, treeConfig.maxBranchDepth);
+        drawFlowers(ctx, structure.flowers, branchGrowth, clockRef.current);
+
+        ctx.restore();
+
+        const activePetalCount = calculateActivePetals(startDate, treeConfig.petalUnit, treeConfig.maxFallingPetals);
+        updateAndDrawPetals(ctx, petalsRef.current, activePetalCount, width, height, deltaSeconds, clockRef.current, treeConfig.fallingPetalSize, treeConfig.petalSpawnHeightFraction);
+
         animationFrameRef.current = requestAnimationFrame(renderFrame);
-        return;
-      }
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, width, height);
-
-      const { branchGrowth, rootGrowth } = calculateGrowths(startDate);
-      const horizonY = height / 2;
-      const centerX = width / 2;
-      const structure = structureRef.current;
-
-      drawBackground(ctx, width, height);
-      drawGrassLine(ctx, width, horizonY);
-
-      ctx.save();
-      ctx.translate(centerX, horizonY);
-      ctx.scale(scale, scale);
-
-      // Raíces: solo se dibujan si rootGrowth > 0 (invisibles los primeros ~12 meses)
-      if (rootGrowth > 0) {
-        const deepestRootY = structure.roots.reduce((deepest, segment) => Math.max(deepest, segment.y2), 40);
-        drawRootGlow(ctx, 0, deepestRootY * 0.85, deepestRootY * 0.7, rootGrowth);
-        drawSkeleton(ctx, structure.roots, rootGrowth, true, treeConfig.maxRootDepth);
-      }
-      drawSkeleton(ctx, structure.branches, branchGrowth, false, treeConfig.maxBranchDepth);
-      drawFlowers(ctx, structure.flowers, branchGrowth, clockRef.current);
-
-      ctx.restore();
-
-      const activePetalCount = calculateActivePetals(startDate, treeConfig.petalUnit, treeConfig.maxFallingPetals);
-      updateAndDrawPetals(ctx, petalsRef.current, activePetalCount, width, height, deltaSeconds, clockRef.current);
+      };
 
       animationFrameRef.current = requestAnimationFrame(renderFrame);
     };
 
-    animationFrameRef.current = requestAnimationFrame(renderFrame);
-    return () => cancelAnimationFrame(animationFrameRef.current);
+    // Pequeño delay para que el browser pinte la transición antes de empezar el canvas loop
+    startTimer = setTimeout(begin, 80);
+
+    return () => {
+      clearTimeout(startTimer);
+      cancelAnimationFrame(animationFrameRef.current);
+    };
   }, [startDate]);
 
   return (
     <div ref={containerRef} className="relative w-full max-w-[420px] aspect-[4/5] mx-auto select-none">
       <canvas ref={canvasRef} className="absolute inset-0 block rounded-xl overflow-hidden" />
+
+      {/* Botón de información del árbol */}
+      <button
+        type="button"
+        onClick={() => setShowInfo((v) => !v)}
+        aria-label="Información sobre el árbol"
+        className="absolute top-3 left-3 z-20 w-7 h-7 rounded-full flex items-center justify-center text-[#E8A598] border border-[#E8A598]/30 bg-[#130D0F]/60 hover:bg-[#E8A598]/15 hover:border-[#E8A598]/60 transition-all duration-300 backdrop-blur-sm text-xs font-mono font-bold shadow-lg"
+      >
+        !
+      </button>
+
+      {/* Panel de información */}
+      {showInfo && (
+        <div
+          className="absolute top-12 left-3 z-30 rounded-2xl p-4 max-w-[84%] shadow-2xl"
+          style={{
+            background: 'rgba(19, 13, 15, 0.82)',
+            border: '1px solid rgba(232, 165, 152, 0.18)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+          }}
+        >
+          {/* Botón cerrar */}
+          <button
+            type="button"
+            onClick={() => setShowInfo(false)}
+            aria-label="Cerrar"
+            className="absolute top-2 right-2.5 text-[#8C7565] hover:text-[#E8A598] text-xs transition-colors duration-200"
+          >
+            ✕
+          </button>
+
+          <p className="text-[10px] font-mono tracking-widest text-[#E8A598] uppercase mb-2">
+            Sobre el árbol
+          </p>
+          <p className="text-[11px] sm:text-xs text-[#C9BFB8] font-serif font-light leading-relaxed">
+            Este árbol sakura crece contigo. Sus ramas, raíces y pétalos aparecen y se expanden
+            conforme el tiempo de nuestra relación avanza. Cuanto más pase, más frondoso y
+            espectacular será. Hoy apenas florece… pero tiene toda la eternidad por delante.
+          </p>
+
+          {treeConfig.treeMaxImage && (
+            <div className="mt-3">
+              <p className="text-[9px] font-mono tracking-widest text-[#62464D] uppercase mb-1.5">
+                Así lucirá cuando madure
+              </p>
+              <img
+                src={treeConfig.treeMaxImage}
+                alt="Árbol en su máximo desarrollo"
+                className="w-full rounded-xl object-cover opacity-85"
+                style={{ maxHeight: 140 }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-[#FFFDFD] shadow-[0_10px_34px_rgba(0,0,0,0.4)]">
         {COUNTER_UNITS.map((unit, index) => (
