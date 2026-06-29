@@ -5,28 +5,33 @@ interface DateRouletteProps {
   options: DateIdea[];
 }
 
-// Dibuja el cupón en canvas y lo descarga como PNG
+interface ConfettiPetal {
+  id: number;
+  left: number;
+  size: number;
+  color: string;
+  delay: number;
+  duration: number;
+}
+
 function downloadCoupon(idea: DateIdea) {
   const W = 700;
   const H = 340;
   const canvas = document.createElement('canvas');
-  canvas.width = W * 2;     // 2x para pantallas retina
+  canvas.width = W * 2;
   canvas.height = H * 2;
   const ctx = canvas.getContext('2d')!;
   ctx.scale(2, 2);
 
-  // Fondo oscuro
   ctx.fillStyle = '#130D0F';
   ctx.fillRect(0, 0, W, H);
 
-  // Borde punteado estilo cupón
   ctx.setLineDash([8, 6]);
   ctx.strokeStyle = '#3C282D';
   ctx.lineWidth = 1.5;
   ctx.strokeRect(16, 16, W - 32, H - 32);
   ctx.setLineDash([]);
 
-  // Semicírculos laterales (perforación de cupón)
   const perf = (x: number) => {
     ctx.beginPath();
     ctx.arc(x, H / 2, 18, -Math.PI / 2, Math.PI / 2, x === 0);
@@ -39,7 +44,6 @@ function downloadCoupon(idea: DateIdea) {
   perf(0);
   perf(W);
 
-  // Línea vertical separadora
   ctx.strokeStyle = '#2D1C22';
   ctx.setLineDash([5, 4]);
   ctx.lineWidth = 1;
@@ -49,7 +53,6 @@ function downloadCoupon(idea: DateIdea) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Emoji + título izquierda
   const emoji = idea.title.match(/^\S+/)?.[0] ?? '🌸';
   const titleText = idea.title.replace(/^\S+\s*/, '');
 
@@ -63,24 +66,47 @@ function downloadCoupon(idea: DateIdea) {
   ctx.fillText('CUPÓN DE CITA', 80, H / 2 + 28);
   ctx.letterSpacing = '0px';
 
-  // Título derecha
+  // DIBUJO DE DECORACIÓN: RAMITA DE ROSAS VECTORIAL
+  ctx.save();
+  ctx.translate(W - 85, 55);
+  // Tallo
+  ctx.strokeStyle = '#3C282D';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.bezierCurveTo(0, 0, 15, -15, 20, -30);
+  ctx.stroke();
+  // Hojas estilizadas
+  ctx.fillStyle = '#2A1C20';
+  ctx.beginPath();
+  ctx.ellipse(8, -12, 3, 6, Math.PI / 4, 0, Math.PI * 2);
+  ctx.fill();
+  // Capullo de Rosa principal
+  ctx.fillStyle = '#E8A598';
+  ctx.beginPath();
+  ctx.arc(20, -32, 8, 0, Math.PI * 2);
+  ctx.fill();
+  // Espiral interno de la flor
+  ctx.strokeStyle = '#130D0F';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(19, -31, 4, 0, Math.PI, true);
+  ctx.stroke();
+  ctx.restore();
+
   ctx.textAlign = 'left';
   ctx.fillStyle = '#FFFDFD';
   ctx.font = 'bold 22px serif';
-  wrapText(ctx, titleText, 184, 80, W - 210, 30);
+  wrapText(ctx, titleText, 184, 80, W - 240, 30);
 
-  // Descripción
   ctx.fillStyle = '#B59F9F';
   ctx.font = '15px serif';
-  wrapText(ctx, idea.description, 184, 130, W - 210, 22);
+  wrapText(ctx, idea.description, 184, 130, W - 240, 22);
 
-  // Pie
   ctx.fillStyle = '#3C282D';
   ctx.font = '10px monospace';
   ctx.textAlign = 'right';
   ctx.fillText('válido cuando quieras · hecho con amor 🌸', W - 28, H - 26);
 
-  // Descarga
   const link = document.createElement('a');
   link.href = canvas.toDataURL('image/png');
   link.download = `cupon-cita-${titleText.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}.png`;
@@ -114,14 +140,16 @@ export default function DateRoulette({ options }: DateRouletteProps) {
   const [spinning, setSpinning] = useState(false);
   const [selected, setSelected] = useState<DateIdea | null>(null);
   const [spinCount, setSpinCount] = useState(0);
+  const [confetti, setConfetti] = useState<ConfettiPetal[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const spin = useCallback(() => {
     if (spinning) return;
     setSpinning(true);
+    setConfetti([]);
 
     let count = 0;
-    const totalSteps = 20 + Math.floor(Math.random() * 8);
+    const totalSteps = 22 + Math.floor(Math.random() * 8);
 
     intervalRef.current = setInterval(() => {
       setSelected(options[Math.floor(Math.random() * options.length)]);
@@ -132,6 +160,18 @@ export default function DateRoulette({ options }: DateRouletteProps) {
         setSelected(final);
         setSpinning(false);
         setSpinCount((n) => n + 1);
+
+        // DISPARAR CONFETI DE PÉTALOS ROSADOS
+        const petalColors = ['#E8A598', '#FFD3DF', '#FFFDFD', '#4E313C', '#B59F9F'];
+        const particles = Array.from({ length: 35 }, (_, i) => ({
+          id: Date.now() + i,
+          left: Math.random() * 100,
+          size: 6 + Math.random() * 9,
+          color: petalColors[Math.floor(Math.random() * petalColors.length)],
+          delay: Math.random() * 0.4,
+          duration: 2.5 + Math.random() * 1.5,
+        }));
+        setConfetti(particles);
       }
     }, 100);
   }, [spinning, options]);
@@ -141,8 +181,29 @@ export default function DateRoulette({ options }: DateRouletteProps) {
   };
 
   return (
-    <div className="space-y-8 max-w-md mx-auto">
-      {/* Resultado */}
+    <div className="space-y-8 max-w-md mx-auto relative">
+      {/* Capa de Confeti */}
+      {confetti.length > 0 && (
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+          {confetti.map((p) => (
+            <div
+              key={p.id}
+              className="absolute top-0 animate-confetti"
+              style={{
+                left: `${p.left}%`,
+                backgroundColor: p.color,
+                width: `${p.size}px`,
+                height: `${p.size * 1.3}px`,
+                borderRadius: '50% 0 50% 50%', // Forma de pétalo cayendo
+                animationDelay: `${p.delay}s`,
+                animationDuration: `${p.duration}s`,
+                boxShadow: p.color === '#FFFDFD' ? '0 0 8px rgba(255,255,255,0.4)' : 'none',
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       <div className="min-h-[140px] flex flex-col items-center justify-center">
         {spinning ? (
           <div className="flex flex-col items-center gap-3">
@@ -175,7 +236,6 @@ export default function DateRoulette({ options }: DateRouletteProps) {
         )}
       </div>
 
-      {/* Botones */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
         <button
           onClick={spin}
@@ -199,7 +259,7 @@ export default function DateRoulette({ options }: DateRouletteProps) {
             className="w-full sm:w-auto py-4 px-6 rounded-full font-sans font-light text-sm tracking-wide transition-all duration-300 border border-[#2D1C22] text-[#62464D] hover:border-[#8C7565] hover:text-[#B59F9F] flex items-center justify-center gap-2"
             aria-label="Guardar cupón como imagen"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
             </svg>
@@ -213,13 +273,6 @@ export default function DateRoulette({ options }: DateRouletteProps) {
           {spinCount === 1 ? '1 tirada' : `${spinCount} tiradas`} — elige la que más te llame
         </p>
       )}
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

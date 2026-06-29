@@ -3,8 +3,9 @@ import { useEffect, useRef, ReactNode } from "react";
 interface FadeInSectionProps {
   children: ReactNode;
   className?: string;
-  delay?: number; // ms
+  delay?: number;
   direction?: "up" | "down" | "left" | "right" | "none";
+  triggerOnce?: boolean; // Propiedad para evitar bucles de parpadeo
 }
 
 export default function FadeInSection({
@@ -12,14 +13,15 @@ export default function FadeInSection({
   className = "",
   delay = 0,
   direction = "up",
+  triggerOnce = true, // Por defecto se congela tras aparecer
 }: FadeInSectionProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   const translateMap: Record<string, string> = {
-    up: "translateY(28px)",
-    down: "translateY(-28px)",
-    left: "translateX(28px)",
-    right: "translateX(-28px)",
+    up: "translateY(24px)",
+    down: "translateY(-24px)",
+    left: "translateX(24px)",
+    right: "translateX(-24px)",
     none: "none",
   };
 
@@ -27,45 +29,36 @@ export default function FadeInSection({
     const el = ref.current;
     if (!el) return;
 
-    // Initial hidden state
+    const hidden = translateMap[direction] ?? "translateY(24px)";
+
     el.style.opacity = "0";
-    el.style.transform = translateMap[direction] ?? "translateY(28px)";
-    el.style.transition = `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms`;
+    el.style.transform = hidden;
+    el.style.transition = `opacity 0.75s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms, transform 0.75s cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms`;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // Reveal: fade in from offset position
             el.style.opacity = "1";
             el.style.transform = "translate(0, 0)";
-            // Don't unobserve — keep watching so we can re-hide on exit
-          } else {
-            // Only re-hide if scrolled out from the BOTTOM (going back up past it)
-            // Check: if element is above the viewport top, don't re-hide
-            const rect = el.getBoundingClientRect();
-            if (rect.bottom > 0) {
-              // Still partially visible or below viewport — don't hide
-              return;
+            if (triggerOnce) {
+              observer.unobserve(el); // Detiene la observación permanente para mitigar el glitch
             }
-            // Element is fully above viewport: reset to allow re-trigger if they scroll back
-            // (optional — uncomment for loop animation)
-            // el.style.opacity = "0";
-            // el.style.transform = translateMap[direction] ?? "translateY(28px)";
+          } else if (!triggerOnce) {
+            el.style.opacity = "0";
+            el.style.transform = hidden;
           }
         });
       },
       {
-        // Trigger as soon as ANY pixel is visible — no centering required
-        threshold: 0,
-        // Small negative margin to avoid triggering on elements just barely off-screen
+        threshold: 0.05,
         rootMargin: "0px 0px -20px 0px",
       }
     );
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [delay, direction]);
+  }, [delay, direction, triggerOnce]);
 
   return (
     <div ref={ref} className={className}>

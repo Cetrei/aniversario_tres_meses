@@ -7,7 +7,7 @@ interface SakuraTreeProps {
 interface BranchData {
   x1: number; y1: number;
   x2: number; y2: number;
-  cpx: number; cpy: number; // control point for quadratic curve
+  cpx: number; cpy: number;
   width: number;
   depth: number;
 }
@@ -18,6 +18,7 @@ interface FlowerData {
   opacity: number;
   phase: number;
   speed: number;
+  bloomDelay: number; // Tiempo de espera para simular nacimiento progresivo
 }
 
 function useCountup(anniversaryDate: string) {
@@ -40,7 +41,6 @@ function useCountup(anniversaryDate: string) {
   return elapsed;
 }
 
-// Seeded pseudo-random for deterministic jitter (same tree every render)
 function seededRand(seed: number) {
   const x = Math.sin(seed + 1) * 10000;
   return x - Math.floor(x);
@@ -70,7 +70,6 @@ function buildTree(
     const x2 = x + Math.cos(rad) * length;
     const y2 = y - Math.sin(rad) * length;
 
-    // Control point: organic lateral bow
     const jitter = (seededRand(seed++) - 0.5) * width * 2.5;
     const cpx = (x + x2) / 2 + jitter;
     const cpy = (y + y2) / 2 + (seededRand(seed++) - 0.5) * width;
@@ -78,7 +77,6 @@ function buildTree(
     branches.push({ x1: x, y1: y, x2, y2, cpx, cpy, width, depth });
 
     if (depth >= 6) {
-      // Terminal — record tip
       tips.push({ x: x2, y: y2 });
     }
 
@@ -89,7 +87,6 @@ function buildTree(
     grow(x2, y2, angle - spread, length * lenRatio, width * wRatio, depth + 1);
     grow(x2, y2, angle + spread, length * lenRatio, width * wRatio, depth + 1);
 
-    // Extra mid branch for fuller canopy
     if (depth < 4) {
       const lateralAngle = angle + (seededRand(seed++) - 0.5) * 15;
       grow(x2, y2, lateralAngle, length * lenRatio * 0.8, width * wRatio * 0.75, depth + 2);
@@ -114,21 +111,19 @@ export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // ── Resize ──────────────────────────────────────────────
     const resize = () => {
       const parent = canvas.parentElement;
       const size = Math.min(parent?.clientWidth ?? 420, 500);
       if (canvas.width !== size || canvas.height !== size) {
         canvas.width = size;
         canvas.height = size;
-        stateRef.current.initialized = false; // rebuild on size change
+        stateRef.current.initialized = false;
       }
     };
     resize();
     const ro = new ResizeObserver(resize);
     if (canvas.parentElement) ro.observe(canvas.parentElement);
 
-    // ── Animation loop ───────────────────────────────────────
     let t = 0;
 
     const draw = () => {
@@ -144,29 +139,28 @@ export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
       const trunkLen = H * 0.26;
       const trunkWidth = W * 0.022;
 
-      // Build geometry once (or after resize)
       if (!stateRef.current.initialized) {
         const { branches, tips } = buildTree(cx, baseY, trunkLen, trunkWidth);
         stateRef.current.branches = branches;
 
-        // Shuffle tips deterministically so first N are spread across canopy
         const shuffled = [...tips];
         for (let i = shuffled.length - 1; i > 0; i--) {
           const j = Math.floor(seededRand(i * 7 + 3) * (i + 1));
           [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
 
-        const count = Math.min(totalHours, shuffled.length * 4); // each tip hosts ~4 flowers
-        stateRef.current.flowers = Array.from({ length: Math.min(count, shuffled.length * 4) }, (_, i) => {
+        const count = Math.min(totalHours, shuffled.length * 4);
+        stateRef.current.flowers = Array.from({ length: count }, (_, i) => {
           const tip = shuffled[i % shuffled.length];
-          const scatter = 18;
+          const scatter = 20;
           return {
             x: tip.x + (seededRand(i * 3 + 1) - 0.5) * scatter,
             y: tip.y + (seededRand(i * 3 + 2) - 0.5) * scatter,
-            r: 5 + seededRand(i * 3 + 3) * 9,
-            opacity: 0.55 + seededRand(i * 5) * 0.45,
+            r: 4 + seededRand(i * 3 + 3) * 7,
+            opacity: 0.6 + seededRand(i * 5) * 0.4,
             phase: seededRand(i * 7) * Math.PI * 2,
-            speed: 0.3 + seededRand(i * 11) * 0.5,
+            speed: 0.2 + seededRand(i * 11) * 0.4,
+            bloomDelay: seededRand(i * 13) * 4.0, // Las flores nacerán escalonadamente en un rango de 4 segundos
           };
         });
 
@@ -178,7 +172,7 @@ export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
 
       const { branches, flowers } = stateRef.current;
 
-      // ── Draw branches — sorted so trunk draws last (on top) ──
+      // Dibujar Ramas
       const sorted = [...branches].sort((a, b) => b.depth - a.depth);
       for (const b of sorted) {
         ctx.save();
@@ -186,11 +180,10 @@ export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
         ctx.moveTo(b.x1, b.y1);
         ctx.quadraticCurveTo(b.cpx, b.cpy, b.x2, b.y2);
 
-        // Warm bark color, slightly lighter at tips
         const depthRatio = b.depth / 9;
-        const r = Math.round(110 + depthRatio * 30);
-        const g = Math.round(82 + depthRatio * 20);
-        const bv = Math.round(45 + depthRatio * 15);
+        const r = Math.round(105 + depthRatio * 30);
+        const g = Math.round(78 + depthRatio * 20);
+        const bv = Math.round(42 + depthRatio * 15);
         ctx.strokeStyle = `rgb(${r},${g},${bv})`;
         ctx.lineWidth = b.width;
         ctx.lineCap = "round";
@@ -199,31 +192,54 @@ export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
         ctx.restore();
       }
 
-      // ── Draw flowers with gentle sway ───────────────────────
+      // Dibujar Pétalos Orgánicos Reales con Animación de Nacimiento
       for (const f of flowers) {
-        const sway = Math.sin(t * f.speed + f.phase) * 1.8;
-        const bob = Math.cos(t * f.speed * 0.6 + f.phase) * 1.2;
+        // Calcular escala de crecimiento (blooming scale) según el tiempo interno transcurrido
+        const bloomScale = Math.min(1, Math.max(0, (t - f.bloomDelay) * 1.8));
+        if (bloomScale <= 0) continue; // No renderizar si no ha nacido
+
+        const sway = Math.sin(t * f.speed + f.phase) * 2.0;
+        const bob = Math.cos(t * f.speed * 0.7 + f.phase) * 1.4;
         const fx = f.x + sway;
         const fy = f.y + bob;
+        const currentRadius = f.r * bloomScale;
 
         ctx.save();
         ctx.globalAlpha = f.opacity;
+        ctx.translate(fx, fy);
+        // Pequeño giro dinámico simulando la brisa
+        ctx.rotate(f.phase + t * f.speed * 0.4);
 
-        const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, f.r);
-        grad.addColorStop(0, "rgba(255, 215, 225, 1)");
-        grad.addColorStop(0.45, "rgba(255, 185, 205, 0.85)");
-        grad.addColorStop(1, "rgba(255, 160, 190, 0)");
-
+        // Geometría orgánica de un pétalo de Sakura (Curvas Bézier gemelas con hendidura)
         ctx.beginPath();
-        ctx.arc(fx, fy, f.r, 0, Math.PI * 2);
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(
+          -currentRadius / 1.3, -currentRadius, 
+          -currentRadius, -currentRadius / 3, 
+          0, currentRadius
+        );
+        ctx.bezierCurveTo(
+          currentRadius, -currentRadius / 3, 
+          currentRadius / 1.3, -currentRadius, 
+          0, 0
+        );
+
+        // Degradado romántico rosado no translúcido/brillante de punto genérico
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, currentRadius);
+        grad.addColorStop(0, "rgba(255, 230, 238, 1)");
+        grad.addColorStop(0.5, "rgba(255, 180, 200, 0.95)");
+        grad.addColorStop(1, "rgba(245, 140, 165, 0)");
+        
         ctx.fillStyle = grad;
         ctx.fill();
 
-        // Center highlight
+        // Línea central fina del nervio del pétalo
         ctx.beginPath();
-        ctx.arc(fx, fy, f.r * 0.22, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 240, 245, 0.95)";
-        ctx.fill();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, currentRadius * 0.5);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
 
         ctx.restore();
       }
@@ -239,7 +255,6 @@ export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
     };
   }, [totalHours]);
 
-  // Rebuild flowers when totalHours changes (new hour ticks)
   useEffect(() => {
     stateRef.current.initialized = false;
   }, [totalHours]);
@@ -248,24 +263,21 @@ export default function SakuraTree({ anniversaryDate }: SakuraTreeProps) {
     totalHours === 0
       ? "el primer momento"
       : totalHours === 1
-      ? "una hora, una flor"
-      : `${totalHours.toLocaleString()} flores — una por cada hora juntos`;
+      ? "una hora, un pétalo florecido"
+      : `${totalHours.toLocaleString()} pétalos — uno floreciendo por cada hora juntos`;
 
   return (
     <div className="flex flex-col items-center gap-8 w-full">
-      {/* Canvas */}
       <canvas
         ref={canvasRef}
         className="w-full max-w-[500px] aspect-square"
-        aria-label="Árbol de sakura — flores que crecen con el tiempo"
+        aria-label="Árbol de sakura — pétalos reales creciendo hora tras hora"
       />
 
-      {/* Poetic label */}
       <p className="text-xs text-[#8C7565] italic tracking-wide text-center px-4 font-sans">
         {poeticLabel}
       </p>
 
-      {/* Contador debajo, fuera del canvas */}
       <div className="flex items-end gap-6 sm:gap-10">
         {[
           { value: days, label: "días" },
