@@ -159,9 +159,25 @@ export interface SakuraTreeConfig {
   rootInitialWidth: number;
 }
 
+export interface TimingConfig {
+  /**
+   * Duración en ms de la transición de salida de la intro (fade + scale).
+   * Rango útil: 500–2000. Default: 1000.
+   */
+  introTransitionMs: number;
+  /**
+   * Duración en ms de la animación de "girando" de la ruleta antes de mostrar el resultado.
+   * Controla cuántos pasos visuales rápidos se muestran antes de revelar la idea.
+   * Rango útil: 800–3500. Default: 2250 (~25 pasos × 90ms).
+   */
+  rouletteSpinMs: number;
+}
+
 export interface CoupleConfig {
   /** Link al repo de GitHub, se muestra en el footer. Dejar vacío para ocultarlo. */
   githubRepoUrl: string;
+  /** Configuración de duraciones de animaciones */
+  timing: TimingConfig;
   sakuraTree: SakuraTreeConfig;
   names: Names;
   /** ISO string — fecha de inicio de la relación */
@@ -170,16 +186,36 @@ export interface CoupleConfig {
   photos: PhotoEntry[];
   buseta: BusetaLayout;
   dateIdeas: DateIdea[];
+  /**
+   * Frases que aparecen mientras la ruleta gira (se eligen al azar).
+   * Si está vacío usa el texto por defecto.
+   */
+  rouletteSpinPhrases: string[];
 }
 
 export const CONFIG: CoupleConfig = {
   githubRepoUrl: "https://github.com/Cetrei/tercer_aniversario_-3",
 
+  timing: {
+    // Duración de la transición de salida de la intro en ms
+    introTransitionMs: 1000,
+    // Cuánto dura el giro de la ruleta antes de revelar el resultado (en ms)
+    rouletteSpinMs: 2250,
+  },
+
+  rouletteSpinPhrases: [
+    "Buscando nuestro próximo destino...",
+    "Consultando con el universo...",
+    "El destino está decidiendo...",
+    "Preguntándole a las estrellas...",
+    "Eligiendo la aventura perfecta...",
+  ],
+
   sakuraTree: {
     // Tamaño de los pétalos que caen (radio base en px)
-    fallingPetalSize: 2.5,
+    fallingPetalSize: 1.5,
     // Radio base de las flores en la copa (unidades internas)
-    flowerRadius: 5,
+    flowerRadius: 12,
     // Altura desde donde caen los pétalos (0.0=top, 0.5=horizonte)
     petalSpawnHeightFraction: 0.2,
     // 'minute' = 1 pétalo por minuto | 'hour' = 1 pétalo por hora de relación
@@ -191,14 +227,17 @@ export const CONFIG: CoupleConfig = {
     // Raíces profundas (invisibles hoy, espectaculares a futuro)
     maxRootDepth: 8,
     // Flores en la copa del árbol maduro
+    // (bajado de 5000 a 1500: mismo aspecto frondoso pero sin generar miles
+    // de gradientes radiales por frame, que era el principal causante de la
+    // lentitud en móvil)
     totalFlowerSeeds: 5000,
     // Proporciones del árbol maduro
-    trunkInitialLength: 145,
+    trunkInitialLength: 200,
     trunkInitialWidth: 24,
     rootInitialLength: 160,
     rootInitialWidth: 26,
     // Imagen del árbol en su máximo desarrollo (dejar vacío si no hay)
-    treeMaxImage: "",
+    treeMaxImage: "/images/ArbolAlMaximo.webp",
   },
 
   names: {
@@ -206,7 +245,7 @@ export const CONFIG: CoupleConfig = {
     to: "Mamor 💗",
   },
 
-  anniversaryDate: "1960-04-01T00:00:00",
+  anniversaryDate: "2026-04-01T00:00:00",
 
 "loveLetter": {
     "place": "San José, 1 de julio de 2026",
@@ -278,33 +317,33 @@ export const CONFIG: CoupleConfig = {
     {
       url: "/images/PrimerasVisitasALaUNA.webp",
       displayName: "Primeras visitas a la UNA",
-      caption: "Llegaste a mi universidad y ya nada fue lo mismo.",
+      caption: "Saber que hasta la universidad es un buen lugar para tener encuentros maritales contigo, me llena mi corazon de pollo, todo lugar es perfecto a tu lado",
     },
     {
       url: "/images/PrimerFotitoDeLaManita.webp",
       displayName: "Primer fotito de la manita",
-      caption: "La primera foto de nuestras manos entrelazadas. La primera de muchas.",
+      caption: "La primera foto de nuestras manos entrelazadas. La primera de muchas, ese sentimiento de cercania y amor al cruzar nuestos dedos, es inexplicable",
     },
     {
       url: "/images/PrimerFotoAzteca.webp",
       displayName: "Primer foto Azteca",
-      caption: "La primera foto oficial. Ya se notaba que algo especial empezaba.",
+      caption: "La primera foto aesteril siendo marinovios, viendo esa foto ya se nota que somos tal para cual",
     },
     {
       url: "/images/SuperBesitoSabana.webp",
       displayName: "Super besito Sabana",
-      caption: "Un beso en la Sabana que vale más que cualquier monumento.",
+      caption: "Un beso con mamor en uno de los momentos más especiales a tu lado, explorar algo que te gusta tanto como la comida asiatica fue divino",
     },
     {
       url: "/images/YoBesandoAlAire.webp",
       displayName: "Yo besando al aire",
-      caption: "Mandándote besos incluso cuando no estás. Siempre.",
+      caption: "Aunque no sepa posar en las fotos, ni para una de besito, quiero salir en cada una de las que tomes de ahora en adelante",
     },
     {
       url: "/images/YoDormidito.webp",
       displayName: "Yo dormidito",
-      caption: "Por fin me viste dormir con esa paz que solo tú me das.",
-      objectPosition: "90% center",
+      caption: "Por fin me viste dormir con esa paz que solo tú me das",
+      objectPosition: "20% center",
     },
   ],
 
@@ -313,36 +352,76 @@ export const CONFIG: CoupleConfig = {
       name: "Joanfer",
       icon: "🧑‍💻",
       role: "Conductor",
-      desc: "Concentrado en el camino, pero mirándote constantemente de reojo por el retrovisor. La playlist perfecta ya estaba lista.",
+      desc: "Concentrado en el camino o eso me gustaria decir, viendote fijamente y disfrutando de la mejor copilota",
     },
     copilot: {
       name: "Jimena",
       icon: "🎨",
       role: "Directora de Ruta",
-      desc: "Eligiendo la música perfecta y dibujando paisajes imaginarios en el vidrio empañado. El mapa dice que girar aquí.",
+      desc: "Eligiendo la música perfecta, cuidando que no nos perdamos y vigilando que Tajin no salte por la ventana",
     },
     rows: [
       [
-        { name: "Conejito", icon: "🐰", role: "Pasajero Curioso", desc: "Asomado completamente por la ventana, con las orejas flotando al viento de la carretera. Es feliz así." },
-        { name: "Perrito", icon: "🐶", role: "Explorador", desc: "Intentando atrapar las gotas de lluvia del vidrio y moviendo la cola al ritmo de la música." },
-        { name: "Nutria A", icon: "🦦", role: "Compañera de Sueño", desc: "Tomada de la mano de su hermana, durmiendo pacíficamente en el asiento más cómodo." },
+        { 
+          name: "Crudo", icon: "🐶", 
+          image: "/images/crudo.webp", 
+          role: "Pasajero Curioso", 
+          desc: "Usando sus privilegios de color para ir en la ventana con la lengua afuera, soboreando el camino." 
+        },
+        { name: "Tostado", icon: "🐶", 
+          image: "/images/tostado.webp", 
+          role: "Tercer al mando",
+          desc: "Probablmente la mitad del viaje pasaria intentando ir al frente para poner su musica, normal al tener 2 hermanos locos al lado"
+        },
+        { name: "Quemado", icon: "🐶",
+          image: "/images/quemado.webp",  
+          role: "Bello durmiente", 
+          desc: "Opuesto a su hermano Crudo, simplemente quiere dormir y que nadie lo moleste" 
+        },
       ],
       [
-        { name: "Nutria B", icon: "🦦", role: "Compañera de Sueño", desc: "Tomada de la mano de su hermana, durmiendo pacíficamente. Las dos son una sola bolita de felicidad." },
-        { name: "Gatito", icon: "🐱", role: "Pasajero Mimado", desc: "Acurrucado sobre el abrigo abandonado en el asiento, ronroneando suavemente al ritmo del motor." },
-        { name: "Erizo", icon: "🦔", role: "Pequeño Viajero", desc: "Hecho una bolita dentro de una taza de café vacía, disfrutando de la calidez del viaje." },
+        { name: "Bachichon", icon: "🐕‍🦺",
+          role: "Comelo todo", 
+          image: "/images/bachichon.webp",  
+          desc: "Nuestro perro salchicha super gordo, en honor a Luna y todos los salchichones del planeta"
+        },
+        { name: "Naranjita", icon: "🐱", 
+          image: "/images/naranjita.webp",  
+          role: "Pasajero Mimado, en veces", 
+          desc: "Nuestro gato naranja para hacerle pelea al golden y a tu querido esposo"
+        },
+        { name: "Yeti", icon: "🦮", 
+          image: "/images/yeti.webp",  
+          role: "Jugueton", 
+          desc: "Si, le puse mi apodo para hacerle honor a mi energia 🤪, necesitamos un golden que alegre la buseta"
+        },
       ],
       [
-        { name: "Patito", icon: "🦆", role: "Observador", desc: "Siguiendo el movimiento del limpiaparabrisas con muchísima atención y seriedad profesional." },
-        { name: "Koala", icon: "🐨", role: "Abrazador Oficial", desc: "Sujeto firmemente al tubo del pasamanos, dormido en un largo viaje de carretera sin soltarse." },
-        { name: "Carpinchito", icon: "🦫", role: "El Conciliador", desc: "Echado a lo ancho del pasillo con un pequeño sombrero de conductor, transmitiendo paz absoluta." },
+        { name: "Chihuaha 1", icon: "🦠", 
+          image: "/images/ch1.webp",  
+          role: "Alarma", 
+          desc: "Un pequeña boca llena de cosas para decir, o ni idea de porque los enanitos ladran tanto" },
+        { name: "Chihuaha 2", icon: "🦠", 
+          image: "/images/ch2.webp",  
+          role: "Abrazador Oficial",
+          desc: "Contrario a su hermano, un bolita de pelo calmada que solo quiere amor, comprension y ternura" },
+        { name: "", icon: "", role: "", desc: "Nunca viene mal un asiento vacio, para el husky tal vez?" },
       ],
     ],
     back: [
-      { name: "Alpaquita A", icon: "🦙", role: "Nube de Viaje", desc: "Asomando su largo cuello desde el asiento de atrás, esponjosa y llenando de abrigo toda la buseta." },
-      { name: "Alpaquita B", icon: "🦙", role: "Nube de Viaje", desc: "La hermana esponjosa, acurrucada al lado, con sus ojos curiosos siguiendo cada paisaje que pasa." },
-      { name: "Conejo Gris", icon: "🐇", role: "Soñador del Fondo", desc: "Al fondo del todo, mirando hacia atrás por la luneta, despidiéndose de cada pueblo que dejamos atrás." },
-      { name: "Tortuga", icon: "🐢", role: "Filósofa del Viaje", desc: "Con toda la paciencia del mundo, apoyada contra la ventana trasera. Para ella el destino nunca tiene prisa." },
+      { name: "Tajin", icon: "🦙", 
+        image: "/images/tajin.webp",
+        role: "Terreneitor", 
+        desc: "Como vamos a meter un pony? ni idea, mejor dejarle dos asientos por si acaso pero sera la estrella" },
+      { name: "Culito de tajin", icon: "", role: "Infestar el bus", desc: "La unica competencia de tu marinovio en ver quien se pudre primero" },
+      { name: "CapybArberto", icon: "🦫", 
+        image: "/images/capybara.webp",
+        role: "El calmado y amigo de Tajin",
+        desc: "Al fondo del todo, vigilando que el pueblo no se revele contra los lideres jaguar, siempre montando a Tajin" },
+      { name: "Tortuga", icon: "🐢", 
+        image: "/images/tortuga.webp",
+        role: "Filósofa del Viaje", 
+        desc: "Una tortuga para que amarre, de fijo le daria sabiduria al resto del zoologico" },
     ],
   },
 

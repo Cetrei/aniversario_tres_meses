@@ -4,6 +4,8 @@ import { DateIdea } from '../config';
 
 interface DateRouletteProps {
   options: DateIdea[];
+  spinPhrases: string[];
+  spinDurationMs: number;
 }
 
 interface ConfettiPetal {
@@ -158,17 +160,20 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
   if (line) ctx.fillText(line.trim(), x, y);
 }
 
-export default function DateRoulette({ options }: DateRouletteProps) {
+export default function DateRoulette({ options, spinPhrases, spinDurationMs }: DateRouletteProps) {
   const [spinning, setSpinning] = useState(false);
   const [selected, setSelected] = useState<DateIdea | null>(null);
   const [spinCount, setSpinCount] = useState(0);
   const [confetti, setConfetti] = useState<ConfettiPetal[]>([]);
+  const [currentSpinPhrase, setCurrentSpinPhrase] = useState('');
   // Sistema de pool: índices restantes por salir
   const [pool, setPool] = useState<number[]>([]);
   // Tras ver todos: modo de selección manual
   const [seenAll, setSeenAll] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const STEP_INTERVAL_MS = 90;
 
   /** Obtiene el próximo índice del pool (sin repetición) y actualiza el pool. */
   const drawFromPool = useCallback((currentPool: number[]): { nextIndex: number; newPool: number[] } => {
@@ -187,8 +192,13 @@ export default function DateRoulette({ options }: DateRouletteProps) {
     setConfetti([]);
     setShowManual(false);
 
+    // Elige una frase al azar de las configuradas
+    const phrases = spinPhrases.length > 0 ? spinPhrases : ['Buscando nuestro próximo destino...'];
+    setCurrentSpinPhrase(phrases[Math.floor(Math.random() * phrases.length)]);
+
+    // Calcula el número de pasos a partir de la duración configurada
+    const totalSteps = Math.max(8, Math.round(spinDurationMs / STEP_INTERVAL_MS));
     let count = 0;
-    const totalSteps = 25 + Math.floor(Math.random() * 8);
 
     // Animación rápida: muestra opciones al azar (solo visual, no quita del pool)
     intervalRef.current = setInterval(() => {
@@ -220,8 +230,8 @@ export default function DateRoulette({ options }: DateRouletteProps) {
         }));
         setConfetti(particles);
       }
-    }, 90);
-  }, [spinning, options, pool, drawFromPool]);
+    }, STEP_INTERVAL_MS);
+  }, [spinning, options, pool, drawFromPool, spinPhrases, spinDurationMs]);
 
   const resetPool = () => {
     setPool([]);
@@ -261,7 +271,7 @@ export default function DateRoulette({ options }: DateRouletteProps) {
               ✦
             </span>
             <p className="text-xs font-serif italic text-[#8C7565]">
-              Buscando nuestro próximo destino...
+              {currentSpinPhrase || 'Buscando nuestro próximo destino...'}
             </p>
           </div>
         ) : selected ? (

@@ -37,7 +37,7 @@ const INTRO_STEPS = [
   { text: null, sub: null, duration: 800 }, // pausa negra
 ];
 
-function CinematicIntro({ onReveal, onDone }: { onReveal: () => void; onDone: () => void }) {
+function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () => void; onDone: () => void; introTransitionMs: number }) {
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
   const [leaving, setLeaving] = useState(false);
@@ -49,7 +49,7 @@ function CinematicIntro({ onReveal, onDone }: { onReveal: () => void; onDone: ()
       const revealTimer = setTimeout(() => {
         setLeaving(true);
         onReveal();
-        setTimeout(onDone, 1000);
+        setTimeout(onDone, introTransitionMs);
       }, 200);
       return () => clearTimeout(revealTimer);
     }
@@ -77,7 +77,7 @@ function CinematicIntro({ onReveal, onDone }: { onReveal: () => void; onDone: ()
     if (leaving) return;
     setLeaving(true);
     onReveal();
-    setTimeout(onDone, 700);
+    setTimeout(onDone, Math.round(introTransitionMs * 0.7));
   };
 
   const current = INTRO_STEPS[step];
@@ -86,7 +86,7 @@ function CinematicIntro({ onReveal, onDone }: { onReveal: () => void; onDone: ()
     <div
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0A0608]"
       style={{
-        transition: 'opacity 1s cubic-bezier(0.4,0,0.2,1), transform 1s cubic-bezier(0.4,0,0.2,1)',
+        transition: `opacity ${introTransitionMs}ms cubic-bezier(0.4,0,0.2,1), transform ${introTransitionMs}ms cubic-bezier(0.4,0,0.2,1)`,
         opacity: leaving ? 0 : 1,
         transform: leaving ? 'scale(1.04)' : 'scale(1)',
         pointerEvents: leaving ? 'none' : 'all',
@@ -168,12 +168,12 @@ function AmbientLights() {
   return (
     <>
       <div
-        className="fixed top-[-8%] right-[-8%] w-[65vw] h-[65vw] rounded-full pointer-events-none z-0"
-        style={{ background: 'radial-gradient(circle, rgba(59,31,39,0.22) 0%, transparent 70%)', filter: 'blur(120px)' }}
+        className="fixed top-[-8%] right-[-8%] w-[65vw] h-[65vw] rounded-full pointer-events-none z-0 ambient-blob-1"
+        style={{ background: 'radial-gradient(circle, rgba(59,31,39,0.22) 0%, transparent 70%)' }}
       />
       <div
-        className="fixed top-[45%] left-[-18%] w-[55vw] h-[55vw] rounded-full pointer-events-none z-0"
-        style={{ background: 'radial-gradient(circle, rgba(232,165,152,0.09) 0%, transparent 70%)', filter: 'blur(140px)' }}
+        className="fixed top-[45%] left-[-18%] w-[55vw] h-[55vw] rounded-full pointer-events-none z-0 ambient-blob-2"
+        style={{ background: 'radial-gradient(circle, rgba(232,165,152,0.09) 0%, transparent 70%)' }}
       />
     </>
   );
@@ -245,13 +245,14 @@ export default function App() {
         <CinematicIntro
           onReveal={() => setContentVisible(true)}
           onDone={() => setIntroComplete(true)}
+          introTransitionMs={CONFIG.timing.introTransitionMs}
         />
       )}
 
       <div
-        className="w-full h-screen overflow-y-auto snap-y snap-mandatory scroll-smooth bg-[#130D0F] text-[#EDE7E5] font-serif hide-scrollbar relative"
+        className="w-full h-[100dvh] overflow-y-auto snap-y snap-mandatory scroll-smooth bg-[#130D0F] text-[#EDE7E5] font-serif hide-scrollbar relative"
         style={{
-          transition: 'opacity 1.1s cubic-bezier(0.4,0,0.2,1)',
+          transition: `opacity ${CONFIG.timing.introTransitionMs + 100}ms cubic-bezier(0.4,0,0.2,1)`,
           opacity: contentVisible ? 1 : 0,
         }}
       >
@@ -284,7 +285,7 @@ export default function App() {
         </header>
 
         {/* ── SECCIÓN 0: Intro de la página ─────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           {/* Brillo central suave */}
           <div
             className="absolute inset-0 pointer-events-none"
@@ -348,7 +349,7 @@ export default function App() {
         </section>
 
         {/* ── SECCIÓN 1: Árbol Sakura ────────────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-start shrink-0 snap-start snap-always px-4 relative overflow-hidden pt-16 sm:pt-20">
+        <section className="w-full h-[100dvh] flex flex-col items-center justify-start shrink-0 snap-start snap-always px-4 relative overflow-hidden pt-16 sm:pt-20">
           <div className="w-full max-w-xl flex flex-col items-center gap-y-4 sm:gap-y-10 h-full">
             <FadeInSection direction="down" delay={0}>
               <div className="text-center space-y-1 relative z-10">
@@ -365,7 +366,7 @@ export default function App() {
         </section>
 
         {/* ── SECCIÓN 2: SmileSlider ─────────────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           <div className="w-full max-w-xl max-h-[82vh] flex flex-col items-center justify-center gap-y-6">
             <FadeInSection direction="down" delay={0}>
               <div className="space-y-1 text-center">
@@ -383,7 +384,7 @@ export default function App() {
         </section>
 
         {/* ── SECCIÓN 3: Buseta ─────────────────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           <div className="w-full max-w-2xl max-h-[85vh] flex flex-col items-center justify-center gap-y-4">
             <FadeInSection direction="down" delay={0}>
               <div className="text-center space-y-1">
@@ -401,7 +402,7 @@ export default function App() {
         </section>
 
         {/* ── SECCIÓN 4: Galería ─────────────────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           {/* Glow más visible: dos radiales rosadas superpuestas */}
           <div
             className="absolute inset-0 pointer-events-none"
@@ -434,7 +435,7 @@ export default function App() {
         </section>
 
         {/* ── SECCIÓN 5: Carta ──────────────────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           {/* Textura de papel (fractal noise) */}
           <div
             className="absolute inset-0 pointer-events-none"
@@ -566,7 +567,7 @@ export default function App() {
         </section>
 
         {/* ── SECCIÓN 6: Ruleta ─────────────────────────────────── */}
-        <section className="w-full h-screen flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 text-center relative overflow-hidden">
+        <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 text-center relative overflow-hidden">
           {/* Partículas ornamentales */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
             {[
@@ -594,12 +595,19 @@ export default function App() {
               </div>
             </FadeInSection>
             <FadeInSection direction="up" delay={180} className="w-full min-h-0 mt-2">
-              <DateRoulette options={CONFIG.dateIdeas} />
+              <DateRoulette
+                options={CONFIG.dateIdeas}
+                spinPhrases={CONFIG.rouletteSpinPhrases}
+                spinDurationMs={CONFIG.timing.rouletteSpinMs}
+              />
             </FadeInSection>
           </div>
         </section>
 
-        <footer className="w-full py-5 sm:py-4 text-center shrink-0 snap-end bg-[#130D0F]">
+        <footer
+          className="w-full min-h-[64px] flex items-center justify-center text-center shrink-0 snap-start snap-always bg-[#130D0F]"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
           <p className="text-[8px] text-[#3C282D] tracking-widest uppercase font-mono font-light">
             © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
           </p>

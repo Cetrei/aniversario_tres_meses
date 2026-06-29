@@ -16,10 +16,11 @@ function PassengerSeat({
   onSelect: () => void;
   size?: 'sm' | 'md' | 'lg';
 }) {
+  // En móvil todo se reduce: sm=micro, md=small, lg=md
   const sizeClasses = {
-    sm: 'text-2xl w-10 h-10',
-    md: 'text-3xl w-12 h-12',
-    lg: 'text-4xl w-14 h-14',
+    sm: 'text-base w-7 h-7 sm:text-2xl sm:w-10 sm:h-10',
+    md: 'text-xl w-9 h-9 sm:text-3xl sm:w-12 sm:h-12',
+    lg: 'text-2xl w-11 h-11 sm:text-4xl sm:w-14 sm:h-14',
   };
 
   return (
@@ -28,7 +29,7 @@ function PassengerSeat({
       title={passenger.name}
       aria-label={`${passenger.name} — ${passenger.role}`}
       className={`
-        flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-500 p-1
+        flex flex-col items-center justify-center gap-0.5 rounded-lg sm:rounded-xl transition-all duration-500 p-0.5 sm:p-1
         ${isSelected
           ? 'scale-110 opacity-100 drop-shadow-[0_0_16px_rgba(232,165,152,0.6)]'
           : 'opacity-40 hover:opacity-75 hover:scale-105'}
@@ -45,7 +46,7 @@ function PassengerSeat({
           {passenger.icon}
         </span>
       )}
-      <span className="text-[8px] font-mono tracking-wider text-[#D4AFA5] font-semibold uppercase leading-none">
+      <span className="text-[6px] sm:text-[8px] font-mono tracking-wider text-[#D4AFA5] font-semibold uppercase leading-none">
         {passenger.name.split(' ')[0]}
       </span>
     </button>
@@ -56,16 +57,16 @@ export default function Buseta({ buseta }: BusetaProps) {
   const [selected, setSelected] = useState<PassengerEntry>(buseta.pilot);
 
   return (
-    <div className="flex flex-col md:grid md:grid-cols-2 gap-4 md:gap-8 lg:gap-20 items-center w-full">
+    <div className="flex flex-col md:grid md:grid-cols-2 gap-2 md:gap-8 lg:gap-20 items-center w-full">
       {/* Plano de la buseta */}
       <div className="flex justify-center">
         <div
-          className="relative rounded-3xl border border-[#2D1C22] bg-[#1A0F13] p-4 shadow-2xl"
-          style={{ minWidth: 240, maxWidth: 300 }}
+          className="relative rounded-2xl sm:rounded-3xl border border-[#2D1C22] bg-[#1A0F13] p-2 sm:p-4 shadow-2xl"
+          style={{ minWidth: 200, maxWidth: 280 }}
           aria-label="Plano de la buseta"
         >
           {/* Fila pilotos — sin "Frente", solo el volante */}
-          <div className="flex justify-between items-center mb-2 px-1">
+          <div className="flex justify-between items-center mb-1 sm:mb-2 px-0.5 sm:px-1">
             <PassengerSeat
               passenger={buseta.pilot}
               isSelected={selected.name === buseta.pilot.name}
@@ -73,10 +74,10 @@ export default function Buseta({ buseta }: BusetaProps) {
               size="md"
             />
             <div className="flex flex-col items-center gap-1 opacity-40">
-              <div className="w-8 h-8 rounded-full border border-[#E8A598]/40 flex items-center justify-center">
-                <span className="text-xs">🚌</span>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-[#E8A598]/40 flex items-center justify-center">
+                <span className="text-[10px] sm:text-xs">🚌</span>
               </div>
-              <span className="text-[7px] font-mono text-[#D4AFA5] font-semibold tracking-wide">VOLANTE</span>
+              <span className="text-[6px] sm:text-[7px] font-mono text-[#D4AFA5] font-semibold tracking-wide">VOLANTE</span>
             </div>
             <PassengerSeat
               passenger={buseta.copilot}
@@ -86,12 +87,12 @@ export default function Buseta({ buseta }: BusetaProps) {
             />
           </div>
 
-          <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#2D1C22] to-transparent mb-3" />
+          <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#2D1C22] to-transparent mb-1 sm:mb-3" />
 
           {/* Filas 1-3: 2 izquierda + pasillo + 1 derecha */}
           {buseta.rows.map((row, rowIdx) => (
-            <div key={rowIdx} className="flex items-center mb-2">
-              <div className="flex gap-1">
+            <div key={rowIdx} className="flex items-center mb-1 sm:mb-2">
+              <div className="flex gap-0.5 sm:gap-1">
                 <PassengerSeat
                   passenger={row[0]}
                   isSelected={selected.name === row[0].name}
@@ -105,7 +106,7 @@ export default function Buseta({ buseta }: BusetaProps) {
                   size="sm"
                 />
               </div>
-              <div className="flex-1 mx-1" />
+              <div className="flex-1 mx-0.5 sm:mx-1" />
               <PassengerSeat
                 passenger={row[2]}
                 isSelected={selected.name === row[2].name}
@@ -115,10 +116,10 @@ export default function Buseta({ buseta }: BusetaProps) {
             </div>
           ))}
 
-          <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#2D1C22] to-transparent mt-1 mb-3" />
+          <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#2D1C22] to-transparent mt-0.5 sm:mt-1 mb-1 sm:mb-3" />
 
           {/* Fondo: 4 contiguos */}
-          <div className="flex justify-center gap-1">
+          <div className="flex justify-center gap-0.5 sm:gap-1">
             {buseta.back.map((passenger) => (
               <PassengerSeat
                 key={passenger.name}

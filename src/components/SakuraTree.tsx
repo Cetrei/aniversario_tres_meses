@@ -29,6 +29,8 @@ interface FlowerSeed {
   swayPhase: number;
   swaySpeed: number;
   warmth: number;
+  /** Indice del sprite pre-renderizado a usar (variedad visual sin costo extra por frame). */
+  spriteIndex: number;
 }
 
 interface FallingPetal {
@@ -64,9 +66,6 @@ interface CanvasMetrics {
   scale: number;
 }
 
-// Las constantes de estructura se reciben desde config.ts a través de SakuraTreeProps.
-// Estos valores se leen en tiempo de montaje desde treeConfig.
-
 const COUNTER_UNITS: { key: keyof ElapsedTime; label: string }[] = [
   { key: 'days', label: 'Días' },
   { key: 'hours', label: 'Horas' },
@@ -74,7 +73,6 @@ const COUNTER_UNITS: { key: keyof ElapsedTime; label: string }[] = [
   { key: 'seconds', label: 'Seg' },
 ];
 
-/** Generador pseudoaleatorio determinista: misma semilla, mismo resultado siempre. */
 function seededRandom(seed: number): number {
   const value = Math.sin(seed * 12.9898) * 43758.5453;
   return value - Math.floor(value);
@@ -88,38 +86,17 @@ function lerp(start: number, end: number, t: number): number {
   return start + (end - start) * t;
 }
 
-/**
- * Devuelve dos valores independientes de madurez:
- *
- * branchGrowth (0–1): controla la copa, el tronco y las flores.
- *   - Día 1       → 0.55  (copa y tronco joven claramente visible)
- *   - 3 meses    → 0.65  (arbolito bonito con flores)
- *   - 1 año      → 0.72
- *   - 5 años     → 0.82
- *   - 50 años    → 0.97  (enorme, copa densa)
- *
- * rootGrowth (0–1): controla las raíces, aparecen mucho más tarde.
- *   - Día 1       → 0.00  (invisibles)
- *   - 3 meses    → 0.00  (invisibles)
- *   - 1 año      → 0.04  (apenas asoman)
- *   - 5 años     → 0.30  (raíces visibles)
- *   - 20 años    → 0.65  (raíces profundas)
- *   - 50 años    → 0.88  (sistema espectacular)
- */
 function calculateGrowths(startDate: string): { branchGrowth: number; rootGrowth: number } {
   const elapsedHours = Math.max(0, (Date.now() - new Date(startDate).getTime()) / 3_600_000);
   const elapsedYears = elapsedHours / 8_760;
 
-  // Copa: crece rápido al principio (curva logarítmica suavizada)
-  // Ancla: 0 horas → 0.55, 50 años → ~0.97
   const BRANCH_BASE = 0.55;
   const BRANCH_RANGE = 0.42;
-  const BRANCH_HALF_LIFE_YEARS = 12; // mitad del rango en ~12 años
+  const BRANCH_HALF_LIFE_YEARS = 12;
   const branchSlow = elapsedYears / (elapsedYears + BRANCH_HALF_LIFE_YEARS);
   const branchGrowth = clamp(BRANCH_BASE + BRANCH_RANGE * branchSlow, 0, 1);
 
-  // Raíces: empiezan a aparecer al año, media vida ~15 años
-  const ROOT_DELAY_YEARS = 1.0; // umbral: antes de este tiempo growth=0
+  const ROOT_DELAY_YEARS = 1.0;
   const ROOT_HALF_LIFE_YEARS = 15;
   const yearsIntoRoots = Math.max(0, elapsedYears - ROOT_DELAY_YEARS);
   const rootGrowth = clamp(yearsIntoRoots / (yearsIntoRoots + ROOT_HALF_LIFE_YEARS), 0, 1);
@@ -127,23 +104,12 @@ function calculateGrowths(startDate: string): { branchGrowth: number; rootGrowth
   return { branchGrowth, rootGrowth };
 }
 
-/**
- * Cuántos pétalos deben caer ahora.
- * Usa una curva suavizada (raíz cúbica) para que en los primeros meses sean muy pocos
- * y aumente de forma gradual y natural conforme pasan los años.
- * - 3 meses (2160h)  → ~4–6 pétalos
- * - 1 año (8760h)   → ~10–14 pétalos
- * - 5 años           → ~30–45 pétalos
- * - 50 años          → maxFallingPetals
- */
 function calculateActivePetals(startDate: string, petalUnit: 'minute' | 'hour', maxFallingPetals: number): number {
   const totalMs = Math.max(0, Date.now() - new Date(startDate).getTime());
   const units = petalUnit === 'minute'
     ? Math.floor(totalMs / 60_000)
     : Math.floor(totalMs / 3_600_000);
-  // Referencia: 50 años en la unidad dada (para escalar al máximo)
   const fiftyYearsUnits = petalUnit === 'minute' ? 50 * 365 * 24 * 60 : 50 * 365 * 24;
-  // Raíz cúbica normalizada: crece rápido al principio pero se aplana suavemente
   const normalized = Math.pow(Math.min(units / fiftyYearsUnits, 1), 1 / 3);
   return clamp(Math.floor(normalized * maxFallingPetals), 1, maxFallingPetals);
 }
@@ -159,9 +125,8 @@ function calculateElapsedTime(startDate: string): ElapsedTime {
 }
 
 /**
- * Genera raíces que salen desde la base del tronco, siempre hacia abajo y hacia los lados.
- * Las raíces principales arrancan casi horizontales y se curvan progresivamente hacia abajo.
- * Nunca tienen un tronco central invertido — cada raíz es independiente desde el origen.
+ * Genera un sistema de raíces orgánico y viejo inspirado en la imagen de referencia.
+ * Crea alas horizontales superficiales pesadas y un bulbo central denso y retorcido.
  */
 function growRoots(params: {
   maxDepth: number;
@@ -173,8 +138,8 @@ function growRoots(params: {
   const segments: SkeletonSegment[] = [];
   const tips: { x: number; y: number }[] = [];
 
-  // 7 raíces principales: distribuidas simétricamente con variación
-  const ROOT_COUNT = 7;
+  // Incrementamos a 10 cables principales para generar la densidad masiva de la imagen
+  const ROOT_COUNT = 10;
 
   function growBranch(
     x: number, y: number,
@@ -184,63 +149,88 @@ function growRoots(params: {
     localSeed: number
   ): void {
     let s = localSeed;
-    const angleRad = (angleDeg * Math.PI) / 180;
-    const x2 = x + Math.cos(angleRad) * length;
-    // y siempre crece positivo (hacia abajo/tierra)
-    const y2 = y + Math.abs(Math.sin(angleRad)) * length;
 
-    const jitter = (seededRandom(s++) - 0.5) * width * 1.2;
-    const cpx = (x + x2) / 2 + jitter;
-    // El punto de control siempre empuja hacia abajo para curvar las raíces naturalmente
-    const cpy = (y + y2) / 2 + seededRandom(s++) * width * 1.8;
-    const birth = depth === 0 ? 0 : clamp(parentBirth + 0.06 + seededRandom(s++) * 0.08, 0, 0.93);
+    // Alta tortuosidad: ondulación sinoidal determinista para simular nudos en madera vieja
+    const wave = Math.sin(depth * 2.5 + seededRandom(s++) * Math.PI) * 14;
+    const adjustedAngle = angleDeg + wave;
+
+    const angleRad = (adjustedAngle * Math.PI) / 180;
+    const x2 = x + Math.cos(angleRad) * length;
+    const y2 = y + Math.abs(Math.sin(angleRad)) * length; // Forzar crecimiento subterráneo
+
+    // Desplazamiento orgánico agresivo en los puntos de control intermedios (Gnarling)
+    const jitterX = (seededRandom(s++) - 0.5) * width * 2.2;
+    const jitterY = (seededRandom(s++) - 0.2) * width * 1.6;
+    const cpx = (x + x2) / 2 + jitterX;
+    const cpy = (y + y2) / 2 + jitterY + width * 0.4;
+
+    const birth = depth === 0 ? 0 : clamp(parentBirth + 0.05 + seededRandom(s++) * 0.05, 0, 0.95);
 
     segments.push({ x1: x, y1: y, x2, y2, cpx, cpy, width, depth, birth });
 
-    if (depth >= maxDepth || length < 6) {
+    if (depth >= maxDepth || length < 5) {
       tips.push({ x: x2, y: y2 });
       return;
     }
 
-    // Bifurcación: una rama continúa más o menos en el mismo ángulo (lateral)
-    // y otra gira más hacia abajo. Esto da aspecto de raigones, no de árbol invertido.
-    const turnDown = 20 + depth * 6 + seededRandom(s++) * 12;
-    const spreadLateral = 6 + seededRandom(s++) * 10;
-    const lengthRatio = 0.70 - depth * 0.006;  // ramas más largas que el original
-    const widthRatio = 0.65;                    // más gruesas en relación
-    const spawnsThird = depth < 3 && seededRandom(s++) > 0.45; // más trifurcaciones
+    const lengthRatio = 0.75 - depth * 0.012;
+    const widthRatio = 0.72; // Mantiene las raíces robustas y corpóreas
+    const isLateral = Math.abs(90 - angleDeg) > 50;
 
-    // Rama que sigue lateral (poco ángulo adicional)
-    growBranch(x2, y2, angleDeg + spreadLateral * Math.sign(x2), length * lengthRatio * 0.9, width * widthRatio, depth + 1, birth, s * 7 + 3);
-    // Rama que gira hacia abajo (más profunda)
-    const downAngle = clamp(angleDeg + turnDown * (angleDeg >= 90 ? -0.3 : 0.3), 5, 175);
-    growBranch(x2, y2, downAngle, length * lengthRatio, width * widthRatio, depth + 1, birth, s * 13 + 7);
+    // Ángulos base entrelazados
+    let childAngle1 = adjustedAngle + (14 + seededRandom(s++) * 16);
+    let childAngle2 = adjustedAngle - (14 + seededRandom(s++) * 16);
 
-    if (spawnsThird) {
-      // Tercera rama: va mucho más hacia abajo
-      const deepAngle = clamp(angleDeg + turnDown * (angleDeg >= 90 ? -0.7 : 0.7), 10, 170);
-      growBranch(x2, y2, deepAngle, length * lengthRatio * 0.75, width * widthRatio * 0.85, depth + 1, birth, s * 19 + 11);
+    // Efecto de Vasija/Bulbo: El núcleo se ensancha externamente a medida que baja
+    if (!isLateral && depth > 1) {
+      childAngle1 += x2 > 0 ? 6 : -6;
+      childAngle2 += x2 > 0 ? -6 : 6;
+    }
+
+    // Control de ramificación densa
+    const branchThresh = depth < 3 ? 0.32 : 0.58;
+
+    if (seededRandom(s++) > branchThresh) {
+      growBranch(x2, y2, childAngle1, length * lengthRatio, width * widthRatio, depth + 1, birth, s * 7 + i7);
+      growBranch(x2, y2, childAngle2, length * lengthRatio * 0.9, width * widthRatio, depth + 1, birth, s * 13 + i13);
+    } else {
+      const singleAngle = adjustedAngle + (seededRandom(s++) - 0.5) * 18;
+      growBranch(x2, y2, singleAngle, length * lengthRatio * 1.05, width * widthRatio * 0.9, depth + 1, birth, s * 5 + i5);
+    }
+
+    // Filamentos verticales internos (reproduce la densa masa del centro de la imagen)
+    if (depth < 4 && seededRandom(s++) > 0.76) {
+      const dropAngle = 90 + (seededRandom(s++) - 0.5) * 25;
+      growBranch(x2, y2, dropAngle, length * lengthRatio * 0.65, width * widthRatio * 0.45, depth + 1, birth, s * 19 + i19);
     }
   }
 
+  // Identificadores fijos para semillas de soporte interno
+  const i7 = 7, i13 = 13, i5 = 5, i19 = 19;
+
   for (let i = 0; i < ROOT_COUNT; i++) {
-    // Distribuye: izq muy lateral, izq intermedia, centro-izq, centro-der, der intermedia, der muy lateral
-    // Ángulos desde horizontal: ~12°–75° en cada lado
-    const side = i % 2 === 0 ? 1 : -1;
-    const rank = Math.floor(i / 2); // 0=más lateral, 1=intermedia, 2=casi centro
-    const baseAngle = 12 + rank * 22 + seededRandom(seedOffset + i * 41) * 10;
-    // Los ángulos de 0°=derecha, 90°=abajo, 180°=izquierda en el sistema de la raíz
-    const startAngle = side > 0 ? baseAngle : 180 - baseAngle;
-    const rootSeed = seedOffset + i * 700;
-    const rootLength = initialLength * (0.9 + seededRandom(rootSeed) * 0.35);
-    const rootWidth = initialWidth * (0.75 + seededRandom(rootSeed + 1) * 0.25);
-    growBranch(0, 0, startAngle, rootLength, rootWidth, 0, 0, rootSeed + 100);
+    const rootSeed = seedOffset + i * 1100;
+    let startAngle = 90;
+    let startWidth = initialWidth * (0.85 + seededRandom(rootSeed) * 0.35);
+    let startLength = initialLength * (0.95 + seededRandom(rootSeed + 1) * 0.25);
+
+    if (i === 0 || i === 1) {
+      // 1. Grandes alas horizontales superficiales justo debajo del césped
+      startAngle = i === 0 ? 6 + seededRandom(rootSeed) * 12 : 174 - seededRandom(rootSeed) * 12;
+      startWidth *= 1.4; // Súper masivas en la base del tronco
+      startLength *= 1.15;
+    } else {
+      // 2. Núcleo en forma de bulbo que cae de forma distribuida
+      const progress = (i - 2) / (ROOT_COUNT - 3);
+      startAngle = 38 + progress * 104 + (seededRandom(rootSeed) - 0.5) * 12;
+    }
+
+    growBranch(0, 0, startAngle, startLength, startWidth, 0, 0, rootSeed + 500);
   }
 
   return { segments, tips };
 }
 
-/** Genera las ramas del árbol hacia arriba con ramificación fractal. */
 function growBranches(params: {
   maxDepth: number;
   initialLength: number;
@@ -284,6 +274,48 @@ function growBranches(params: {
   grow(0, 0, 90, initialLength, initialWidth, 0, 0);
   return { segments, tips };
 }
+
+const FLOWER_SPRITE_VARIANTS = 6;
+const FLOWER_SPRITE_SIZE = 48;
+
+function createFlowerSprites(): HTMLCanvasElement[] {
+  const size = FLOWER_SPRITE_SIZE;
+  const r = size / 2;
+
+  const base = document.createElement('canvas');
+  base.width = size;
+  base.height = size;
+  const baseCtx = base.getContext('2d')!;
+
+  const gradient = baseCtx.createRadialGradient(r, r, 0, r, r, r);
+  gradient.addColorStop(0, 'rgba(255, 241, 244, 1)');
+  gradient.addColorStop(0.65, 'rgba(244, 160, 178, 0.95)');
+  gradient.addColorStop(1, 'rgba(225, 110, 138, 0)');
+  baseCtx.fillStyle = gradient;
+
+  baseCtx.translate(r, r);
+  baseCtx.beginPath();
+  baseCtx.moveTo(0, 0);
+  baseCtx.bezierCurveTo(-r, -r, -r, r / 2, 0, r);
+  baseCtx.bezierCurveTo(r, r / 2, r, -r, 0, 0);
+  baseCtx.fill();
+
+  const variants: HTMLCanvasElement[] = [];
+  for (let i = 0; i < FLOWER_SPRITE_VARIANTS; i++) {
+    const variant = document.createElement('canvas');
+    variant.width = size;
+    variant.height = size;
+    const vCtx = variant.getContext('2d')!;
+    vCtx.translate(r, r);
+    vCtx.rotate((i / FLOWER_SPRITE_VARIANTS) * Math.PI * 2);
+    vCtx.translate(-r, -r);
+    vCtx.drawImage(base, 0, 0);
+    variants.push(variant);
+  }
+
+  return variants;
+}
+
 function growFlowers(branches: SkeletonSegment[], tips: { x: number; y: number }[], targetCount: number, seedOffset: number, flowerRadius: number): FlowerSeed[] {
   const outerBranches = branches.filter((branch) => branch.depth >= 3);
   const pool = outerBranches.length > 0 ? outerBranches : branches;
@@ -314,13 +346,13 @@ function growFlowers(branches: SkeletonSegment[], tips: { x: number; y: number }
       swayPhase: seededRandom(seed * 9) * Math.PI * 2,
       swaySpeed: 0.3 + seededRandom(seed * 10) * 0.35,
       warmth: seededRandom(seed * 11),
+      spriteIndex: Math.floor(seededRandom(seed * 13) * FLOWER_SPRITE_VARIANTS),
     });
   }
 
   return flowers;
 }
 
-/** Construye la estructura fractal completa (madura) una sola vez: ramas, raíces, flores y su bounding box. */
 function buildTreeStructure(cfg: SakuraTreeConfig): TreeStructure {
   const trunk = growBranches({ maxDepth: cfg.maxBranchDepth, initialLength: cfg.trunkInitialLength, initialWidth: cfg.trunkInitialWidth, seedOffset: 17 });
   const roots = growRoots({ maxDepth: cfg.maxRootDepth, initialLength: cfg.rootInitialLength, initialWidth: cfg.rootInitialWidth, seedOffset: 941 });
@@ -346,7 +378,6 @@ function buildTreeStructure(cfg: SakuraTreeConfig): TreeStructure {
   return { branches: trunk.segments, roots: roots.segments, flowers, bounds: { left, right, top, bottom } };
 }
 
-/** Calcula la escala máxima segura para que el árbol maduro completo nunca se corte, sin importar la resolución. */
 function computeFitScale(canvasWidth: number, canvasHeight: number, bounds: TreeStructure['bounds']): number {
   const widthSpan = Math.max(Math.abs(bounds.left), Math.abs(bounds.right), 1);
   const topSpan = Math.max(Math.abs(bounds.top), 1);
@@ -359,7 +390,6 @@ function computeFitScale(canvasWidth: number, canvasHeight: number, bounds: Tree
   return Math.min(scaleForWidth, scaleForCanopy, scaleForRoots);
 }
 
-/** Cielo de atardecer estático en la mitad superior y tierra oscura en la mitad inferior. */
 function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: number): void {
   const horizonY = height / 2;
 
@@ -405,7 +435,6 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
   }
 }
 
-/** Línea recta del césped, justo en el centro del canvas, con pequeñas briznas sutiles. */
 function drawGrassLine(ctx: CanvasRenderingContext2D, width: number, horizonY: number): void {
   ctx.save();
   ctx.strokeStyle = 'rgba(110, 130, 80, 0.85)';
@@ -427,7 +456,6 @@ function drawGrassLine(ctx: CanvasRenderingContext2D, width: number, horizonY: n
   ctx.restore();
 }
 
-/** Resplandor cálido bajo las raíces más profundas: la energía acumulada por el tiempo juntos. */
 function drawRootGlow(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, growth: number): void {
   const alpha = 0.05 + growth * 0.22;
   const glow = ctx.createRadialGradient(x, y, 0, x, y, Math.max(radius, 1));
@@ -439,14 +467,11 @@ function drawRootGlow(ctx: CanvasRenderingContext2D, x: number, y: number, radiu
   ctx.fill();
 }
 
-/** Dibuja ramas o raíces revelando solo los segmentos cuya "fecha de nacimiento" ya fue alcanzada por la madurez actual. */
 function drawSkeleton(ctx: CanvasRenderingContext2D, segments: SkeletonSegment[], growth: number, isRoot: boolean, maxDepth: number): void {
-  // El grosor escala de forma muy pronunciada con el growth:
-  // - Copa joven (growth=0.55): tronco fino pero visible
-  // - Copa vieja (growth=0.97): tronco enorme, imponente
-  // Usamos una curva cuadrática para que el efecto sea exagerado a alto growth.
-  const t = (growth - 0.5) / 0.5; // renormaliza 0.5–1.0 → 0–1
-  const thicknessBoost = 0.22 + Math.pow(Math.max(0, t), 1.6) * 2.8;
+  const t = (growth - 0.5) / 0.5;
+  const thicknessBoost = isRoot
+    ? 0.18 + Math.pow(Math.max(0, t), 1.8) * 1.6
+    : 0.22 + Math.pow(Math.max(0, t), 1.6) * 2.8;
   const transitionWidth = 0.10;
 
   for (const segment of segments) {
@@ -472,8 +497,7 @@ function drawSkeleton(ctx: CanvasRenderingContext2D, segments: SkeletonSegment[]
   }
 }
 
-/** Pétalos en flor sobre las ramas: nacen diminutos y crecen hasta su tamaño real, con un balanceo apenas perceptible. */
-function drawFlowers(ctx: CanvasRenderingContext2D, flowers: FlowerSeed[], growth: number, time: number): void {
+function drawFlowers(ctx: CanvasRenderingContext2D, flowers: FlowerSeed[], growth: number, time: number, sprites: HTMLCanvasElement[]): void {
   const transitionWidth = 0.18;
 
   for (const flower of flowers) {
@@ -486,24 +510,18 @@ function drawFlowers(ctx: CanvasRenderingContext2D, flowers: FlowerSeed[], growt
     const swayX = Math.sin(time * flower.swaySpeed + flower.swayPhase) * 1.4;
     const swayY = Math.cos(time * flower.swaySpeed * 0.8 + flower.swayPhase) * 0.8;
 
-    ctx.save();
-    ctx.translate(flower.x + swayX, flower.y + swayY);
-    ctx.rotate(flower.swayPhase);
+    const diameter = currentRadius * 2;
     ctx.globalAlpha = 0.75 + flower.warmth * 0.2;
-
-    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(currentRadius, 0.01));
-    gradient.addColorStop(0, 'rgba(255, 241, 244, 1)');
-    gradient.addColorStop(0.65, 'rgba(244, 160, 178, 0.95)');
-    gradient.addColorStop(1, 'rgba(225, 110, 138, 0)');
-    ctx.fillStyle = gradient;
-
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(-currentRadius, -currentRadius, -currentRadius, currentRadius / 2, 0, currentRadius);
-    ctx.bezierCurveTo(currentRadius, currentRadius / 2, currentRadius, -currentRadius, 0, 0);
-    ctx.fill();
-    ctx.restore();
+    ctx.drawImage(
+      sprites[flower.spriteIndex],
+      flower.x + swayX - currentRadius,
+      flower.y + swayY - currentRadius,
+      diameter,
+      diameter
+    );
   }
+
+  ctx.globalAlpha = 1;
 }
 
 function createFallingPetal(width: number, height: number, seed: number, petalSize: number, spawnFraction: number): FallingPetal {
@@ -523,7 +541,6 @@ function createFallingPetal(width: number, height: number, seed: number, petalSi
   };
 }
 
-/** Actualiza y dibuja los pétalos cayendo desde la copa, que se desvanecen antes de tocar el suelo. */
 function updateAndDrawPetals(
   ctx: CanvasRenderingContext2D,
   petals: FallingPetal[],
@@ -535,10 +552,7 @@ function updateAndDrawPetals(
   petalSize: number,
   spawnFraction: number
 ): void {
-  // El horizonte (suelo) está en la mitad del canvas.
-  // Los pétalos solo caen hasta ahí y se desvanecen en los últimos 30% de su recorrido.
   const horizonY = height / 2;
-  // Zona de fade: empieza a los 70% del camino hacia el horizonte
   const fadeStartY = horizonY * 0.70;
   const fadeRange = horizonY - fadeStartY;
 
@@ -548,7 +562,6 @@ function updateAndDrawPetals(
     petal.x += (petal.vx + Math.sin(time * petal.swaySpeed + petal.swayPhase) * 10) * deltaSeconds;
     petal.rotation += petal.rotationSpeed * deltaSeconds;
 
-    // Reaparece en la copa cuando llega al horizonte o sale lateralmente
     const reachedGround = petal.y >= horizonY;
     const leftViewport = petal.x < -20 || petal.x > width + 20;
     if (reachedGround || leftViewport) {
@@ -565,7 +578,6 @@ function updateAndDrawPetals(
       continue;
     }
 
-    // Fade: 1.0 por encima de fadeStartY, 0.0 en horizonY
     const fadeAlpha = petal.y < fadeStartY
       ? 1.0
       : 1.0 - clamp((petal.y - fadeStartY) / fadeRange, 0, 1);
@@ -599,13 +611,11 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
   const [elapsed, setElapsed] = useState<ElapsedTime>(() => calculateElapsedTime(startDate));
   const [showInfo, setShowInfo] = useState(false);
 
-  // Reloj en tiempo real para el contador visible (Días, Horas, Minutos, Segundos)
   useEffect(() => {
     const intervalId = setInterval(() => setElapsed(calculateElapsedTime(startDate)), 1000);
     return () => clearInterval(intervalId);
   }, [startDate]);
 
-  // Ajusta el tamaño físico del canvas cuando el contenedor cambia de tamaño (responsivo de verdad)
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -636,81 +646,111 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
     return () => observer.disconnect();
   }, []);
 
-  // Bucle principal: dibuja el árbol según la madurez real y anima los pétalos con el viento vía requestAnimationFrame
+  // Bucle principal optimizado: Inicializa sprites y gestiona el IntersectionObserver
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
+    const container = containerRef.current;
+    if (!canvas || !ctx || !container) return;
 
-    // Defer el inicio del bucle para no bloquear el paint inicial tras la transición
-    let startTimer: ReturnType<typeof setTimeout>;
-    const begin = () => {
-      const renderFrame = (timestamp: number) => {
-        const deltaSeconds = lastTimestampRef.current === null ? 0 : Math.min(0.05, (timestamp - lastTimestampRef.current) / 1000);
-        lastTimestampRef.current = timestamp;
-        clockRef.current += deltaSeconds;
+    // Instanciamos los sprites una única vez para toda la vida útil del montaje
+    const flowerSprites = createFlowerSprites();
+    let isRunning = false;
 
-        const { width, height, dpr, scale } = metricsRef.current;
-        if (width === 0 || height === 0) {
-          animationFrameRef.current = requestAnimationFrame(renderFrame);
-          return;
-        }
+    const renderFrame = (timestamp: number) => {
+      if (!isRunning) return;
 
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, width, height);
+      const deltaSeconds = lastTimestampRef.current === null ? 0 : Math.min(0.05, (timestamp - lastTimestampRef.current) / 1000);
+      lastTimestampRef.current = timestamp;
+      clockRef.current += deltaSeconds;
 
-        const { branchGrowth, rootGrowth } = calculateGrowths(startDate);
-        const horizonY = height / 2;
-        const centerX = width / 2;
-        const structure = structureRef.current;
-
-        drawBackground(ctx, width, height);
-        drawGrassLine(ctx, width, horizonY);
-
-        ctx.save();
-        ctx.translate(centerX, horizonY);
-        ctx.scale(scale, scale);
-
-        // Raíces: solo se dibujan si rootGrowth > 0, y clipadas al área de tierra (bajo el horizonte)
-        if (rootGrowth > 0) {
-          ctx.save();
-          // Clip: solo la mitad inferior (tierra). En coordenadas locales y=0 es el horizonte.
-          ctx.beginPath();
-          ctx.rect(-width / scale, 0, (width / scale) * 2, height / scale);
-          ctx.clip();
-          const deepestRootY = structure.roots.reduce((deepest, segment) => Math.max(deepest, segment.y2), 40);
-          drawRootGlow(ctx, 0, deepestRootY * 0.85, deepestRootY * 0.7, rootGrowth);
-          drawSkeleton(ctx, structure.roots, rootGrowth, true, treeConfig.maxRootDepth);
-          ctx.restore();
-        }
-        drawSkeleton(ctx, structure.branches, branchGrowth, false, treeConfig.maxBranchDepth);
-        drawFlowers(ctx, structure.flowers, branchGrowth, clockRef.current);
-
-        ctx.restore();
-
-        const activePetalCount = calculateActivePetals(startDate, treeConfig.petalUnit, treeConfig.maxFallingPetals);
-        updateAndDrawPetals(ctx, petalsRef.current, activePetalCount, width, height, deltaSeconds, clockRef.current, treeConfig.fallingPetalSize, treeConfig.petalSpawnHeightFraction);
-
+      const { width, height, dpr, scale } = metricsRef.current;
+      if (width === 0 || height === 0) {
         animationFrameRef.current = requestAnimationFrame(renderFrame);
-      };
+        return;
+      }
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const { branchGrowth, rootGrowth } = calculateGrowths(startDate);
+      const horizonY = height / 2;
+      const centerX = width / 2;
+      const structure = structureRef.current;
+
+      drawBackground(ctx, width, height);
+      drawGrassLine(ctx, width, horizonY);
+
+      ctx.save();
+      ctx.translate(centerX, horizonY);
+      ctx.scale(scale, scale);
+
+      if (rootGrowth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-width / scale, 0, (width / scale) * 2, height / scale);
+        ctx.clip();
+        const deepestRootY = structure.roots.reduce((deepest, segment) => Math.max(deepest, segment.y2), 40);
+        drawRootGlow(ctx, 0, deepestRootY * 0.85, deepestRootY * 0.7, rootGrowth);
+        drawSkeleton(ctx, structure.roots, rootGrowth, true, treeConfig.maxRootDepth);
+        ctx.restore();
+      }
+      
+      drawSkeleton(ctx, structure.branches, branchGrowth, false, treeConfig.maxBranchDepth);
+      
+      // FIX CRÍTICO: Pasamos los sprites instanciados como 5to argumento
+      drawFlowers(ctx, structure.flowers, branchGrowth, clockRef.current, flowerSprites);
+
+      ctx.restore();
+
+      const activePetalCount = calculateActivePetals(startDate, treeConfig.petalUnit, treeConfig.maxFallingPetals);
+      updateAndDrawPetals(ctx, petalsRef.current, activePetalCount, width, height, deltaSeconds, clockRef.current, treeConfig.fallingPetalSize, treeConfig.petalSpawnHeightFraction);
 
       animationFrameRef.current = requestAnimationFrame(renderFrame);
     };
 
-    // Pequeño delay para que el browser pinte la transición antes de empezar el canvas loop
-    startTimer = setTimeout(begin, 80);
+    const startLoop = () => {
+      if (!isRunning) {
+        isRunning = true;
+        lastTimestampRef.current = performance.now();
+        animationFrameRef.current = requestAnimationFrame(renderFrame);
+      }
+    };
+
+    const stopLoop = () => {
+      isRunning = false;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+
+    // Pausa el canvas por completo en el teléfono cuando no se está viendo el árbol
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          startLoop();
+        } else {
+          stopLoop();
+        }
+      },
+      { rootMargin: '150px' }
+    );
+
+    const startTimer = setTimeout(() => {
+      observer.observe(container);
+    }, 80);
 
     return () => {
       clearTimeout(startTimer);
-      cancelAnimationFrame(animationFrameRef.current);
+      observer.disconnect();
+      stopLoop();
     };
-  }, [startDate]);
+  }, [startDate, treeConfig]);
 
   return (
     <div ref={containerRef} className="relative w-full max-w-[420px] aspect-[4/5] mx-auto select-none">
       <canvas ref={canvasRef} className="absolute inset-0 block rounded-xl overflow-hidden" />
 
-      {/* Botón de información del árbol */}
       <button
         type="button"
         onClick={() => setShowInfo((v) => !v)}
@@ -720,7 +760,6 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
         !
       </button>
 
-      {/* Panel de información */}
       {showInfo && (
         <div
           className="absolute top-12 left-3 z-30 rounded-2xl p-4 max-w-[84%] shadow-2xl"
@@ -731,7 +770,6 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
             WebkitBackdropFilter: 'blur(12px)',
           }}
         >
-          {/* Botón cerrar */}
           <button
             type="button"
             onClick={() => setShowInfo(false)}
@@ -759,7 +797,7 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
                 src={treeConfig.treeMaxImage}
                 alt="Árbol en su máximo desarrollo"
                 className="w-full rounded-xl object-cover opacity-85"
-                style={{ maxHeight: 140 }}
+                style={{ maxHeight: 200 }}
               />
             </div>
           )}

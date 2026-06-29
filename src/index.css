@@ -139,4 +139,21 @@
   .animate-bounce-slow {
     animation: bounceSlow 2.2s ease-in-out infinite;
   }
+
+  /* Luces ambientales de fondo: blur reducido en móvil (los blurs grandes
+     son muy costosos para la GPU de un teléfono), completo en escritorio */
+  .ambient-blob-1 {
+    filter: blur(60px);
+  }
+  .ambient-blob-2 {
+    filter: blur(70px);
+  }
+  @media (min-width: 768px) {
+    .ambient-blob-1 {
+      filter: blur(120px);
+    }
+    .ambient-blob-2 {
+      filter: blur(140px);
+    }
+  }
 }
