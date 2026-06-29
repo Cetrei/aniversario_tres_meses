@@ -173,6 +173,28 @@ export interface TimingConfig {
   rouletteSpinMs: number;
 }
 
+export interface TimelineMilestone {
+  /** Fecha ISO del hito. El primero idealmente coincide con `anniversaryDate`. */
+  date: string;
+  /** Etiqueta corta (1-3 palabras), se muestra en font-mono diminuto. */
+  label: string;
+}
+
+export interface DecorationsConfig {
+  /** Línea de tiempo vertical sutil junto al número grande de la portada (Sección 0). Se oculta en móvil/tablet (solo lg+) para no estorbar ni gastar render en pantallas chicas. */
+  coverTimeline: boolean;
+  /** Capa de estrellas + glow rosado detrás del canvas del árbol (Sección 1). El parpadeo de las estrellas solo se anima en escritorio (md+); en móvil quedan fijas. */
+  treeConstellation: boolean;
+  /** Glow cálido tipo lámpara detrás de la carta, fuera del card (Sección 5). */
+  letterPaperGlow: boolean;
+  /** Pétalos estáticos en las esquinas de la galería (Sección 4). Menos pétalos en móvil, set completo en sm+. */
+  galleryPetals: boolean;
+  /** Sello/monograma circular al pie de la carta — tanto en pantalla como en el PNG descargado (Sección 5). */
+  letterSeal: boolean;
+  /** Anillos concéntricos animados detrás de la ruleta (Sección 6). Un solo anillo en móvil, dos en sm+. */
+  rouletteShimmer: boolean;
+}
+
 export interface CoupleConfig {
   /** Link al repo de GitHub, se muestra en el footer. Dejar vacío para ocultarlo. */
   githubRepoUrl: string;
