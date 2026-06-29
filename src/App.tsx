@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { CONFIG } from './config';
 import FadeInSection from './components/FadeInSection';
 import SakuraTree from './components/SakuraTree';
@@ -11,7 +11,19 @@ import DateRoulette from './components/DateRoulette';
 function getMonthsElapsed(startDate: string): number {
   const start = new Date(startDate);
   const now = new Date();
-  return (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+  
+  let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+  
+  // Ajustar si el día del mes actual es menor que el día de inicio
+  if (now.getDate() < start.getDate()) {
+    months--;
+  } else if (now.getDate() === start.getDate() && now.getHours() < start.getHours()) {
+    months--;
+  } else if (now.getDate() === start.getDate() && now.getHours() === start.getHours() && now.getMinutes() < start.getMinutes()) {
+    months--;
+  }
+  
+  return months;
 }
 
 function getMonthLabel(months: number): string {
@@ -28,15 +40,170 @@ function getMonthNumber(months: number): string {
   return String(years);
 }
 
+// ─── NUEVO: Helper para calcular tiempo restante hasta 3 meses ───
+function getTimeUntil3Months(startDate: string): { days: number; hours: number; minutes: number; seconds: number; totalMs: number; hasReached: boolean } {
+  const start = new Date(startDate);
+  const target = new Date(start);
+  target.setMonth(target.getMonth() + 3);
+  
+  const now = new Date();
+  const diff = target.getTime() - now.getTime();
+  
+  if (diff <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, hasReached: true };
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  return { days, hours, minutes, seconds, totalMs: diff, hasReached: false };
+}
+
+// ─── NUEVO: Componente de pantalla de espera ───
+function WaitingScreen({ startDate }: { startDate: string }) {
+  const [timeLeft, setTimeLeft] = useState(() => getTimeUntil3Months(startDate));
+  const [showReloadPrompt, setShowReloadPrompt] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const updated = getTimeUntil3Months(startDate);
+      setTimeLeft(updated);
+      
+      // Si acaba de llegar a 0, mostrar el prompt de recarga
+      if (updated.hasReached && !showReloadPrompt) {
+        setShowReloadPrompt(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [startDate, showReloadPrompt]);
+
+  const handleReload = () => {
+    window.location.reload();
+  };
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0A0608]">
+      {/* Grano de fondo sutil */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.04]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          backgroundSize: '180px 180px',
+        }}
+      />
+
+      {/* Brillo rosado central muy tenue */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 50% 40% at 50% 50%, rgba(232,165,152,0.06) 0%, transparent 70%)',
+        }}
+      />
+
+      {/* Contenido */}
+      <div className="relative z-10 flex flex-col items-center text-center px-8 max-w-md">
+        {/* Icono de reloj/flor */}
+        <div className="mb-8 opacity-30">
+          <svg width="48" height="48" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+            <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+            <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+            <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+            <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
+          </svg>
+        </div>
+
+        {!showReloadPrompt ? (
+          <>
+            <p className="text-3xl sm:text-5xl font-serif font-light text-[#FFFDFD] tracking-tight leading-tight mb-2">
+              Aún no es momento
+            </p>
+            <p className="text-lg sm:text-xl font-serif italic text-[#E8A598] tracking-tight leading-tight mb-8">
+              Tienes que esperar a que cumplamos 3 meses juntos
+            </p>
+
+            {/* Cronómetro */}
+            <div className="flex items-center gap-3 sm:gap-4 mb-6">
+              {[
+                { value: timeLeft.days, label: 'Días' },
+                { value: timeLeft.hours, label: 'Horas' },
+                { value: timeLeft.minutes, label: 'Min' },
+                { value: timeLeft.seconds, label: 'Seg' },
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[#1C1216] border border-[#4E313C]/30 flex items-center justify-center">
+                    <span className="text-2xl sm:text-3xl font-mono font-light text-[#FFFDFD]">
+                      {pad(item.value)}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-mono tracking-widest text-[#62464D] uppercase mt-2">
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-[#62464D] font-mono tracking-wide max-w-xs leading-relaxed">
+              te hice esta sorpresa con mucho cariño. Vuelve cuando el tiempo esté completo.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-3xl sm:text-5xl font-serif font-light text-[#FFFDFD] tracking-tight leading-tight mb-2">
+              ¡Llegó el momento!
+            </p>
+            <p className="text-lg sm:text-xl font-serif italic text-[#E8A598] tracking-tight leading-tight mb-8">
+              Ya cumplimos 3 meses juntos
+            </p>
+
+            <button
+              onClick={handleReload}
+              className="px-8 py-3 rounded-full bg-[#E8A598]/10 border border-[#E8A598]/30 text-[#E8A598] font-serif text-sm tracking-wide hover:bg-[#E8A598]/20 hover:border-[#E8A598]/50 transition-all duration-300 flex items-center gap-2"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+              Recargar página
+            </button>
+
+            <p className="text-[10px] text-[#62464D] font-mono tracking-wide mt-4">
+              Presiona el botón para descubrir la sorpresa
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* Flor pequeña que siempre se ve */}
+      <div
+        className="absolute bottom-12 left-1/2 -translate-x-1/2"
+        style={{ opacity: 0.25 }}
+      >
+        <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+          <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+          <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+          <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+          <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 // PANTALLA DE INTRO CINEMATOGRÁFICA
-// Secuencia de palabras que aparecen y desaparecen antes de revelar el sitio
 const INTRO_STEPS = [
   { text: null, sub: null, duration: 1200 },
   { text: 'Para ti.', sub: null, duration: 1400 },
   { text: 'Que eres', sub: 'mi lugar favorito.', duration: 1600 },
   { text: getMonthNumber(getMonthsElapsed(CONFIG.anniversaryDate))+ ' meses', sub: 'de lo mejor.', duration: 1600 },
   { text: 'Mi marinovia', sub: 'la más especial y hermosa.', duration: 2000 },
-  { text: null, sub: null, duration: 800 }, // pausa negra
+  { text: null, sub: null, duration: 800 },
 ];
 
 function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () => void; onDone: () => void; introTransitionMs: number }) {
@@ -47,7 +214,6 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
 
   useEffect(() => {
     if (step >= INTRO_STEPS.length) {
-      // Fade out de toda la pantalla intro, cruzado con la revelación del contenido principal
       const revealTimer = setTimeout(() => {
         setLeaving(true);
         onReveal();
@@ -57,19 +223,15 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
     }
 
     const { duration } = INTRO_STEPS[step];
-
-    // Fade in
     setVisible(true);
     const hideTimer = setTimeout(() => {
       setVisible(false);
-      // Espera el fade-out antes de avanzar al siguiente paso
       setTimeout(() => setStep((s) => s + 1), 500);
     }, duration);
 
     return () => clearTimeout(hideTimer);
   }, [step, onDone, onReveal]);
 
-  // El botón de saltar aparece tras un breve instante, de forma muy discreta
   useEffect(() => {
     const skipTimer = setTimeout(() => setSkipVisible(true), 900);
     return () => clearTimeout(skipTimer);
@@ -94,7 +256,6 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
         pointerEvents: leaving ? 'none' : 'all',
       }}
     >
-      {/* Grano de fondo sutil */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.04]"
         style={{
@@ -102,16 +263,12 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
           backgroundSize: '180px 180px',
         }}
       />
-
-      {/* Brillo rosado central muy tenue */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: 'radial-gradient(ellipse 50% 40% at 50% 50%, rgba(232,165,152,0.06) 0%, transparent 70%)',
         }}
       />
-
-      {/* Contenido de la intro */}
       {current && (current.text || current.sub) && (
         <div
           className="text-center px-8 select-none"
@@ -133,12 +290,7 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
           )}
         </div>
       )}
-
-      {/* Flor pequeña que siempre se ve */}
-      <div
-        className="absolute bottom-12 left-1/2 -translate-x-1/2"
-        style={{ opacity: 0.25 }}
-      >
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2" style={{ opacity: 0.25 }}>
         <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
           <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
           <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
@@ -147,8 +299,6 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
           <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
         </svg>
       </div>
-
-      {/* Botón muy sutil para saltar la introducción */}
       <button
         type="button"
         onClick={handleSkip}
@@ -181,7 +331,7 @@ function AmbientLights() {
   );
 }
 
-// DECORACIÓN LATERAL (solo xl+)
+// DECORACIÓN LATERAL
 function SideDecoration({ side }: { side: 'left' | 'right' }) {
   const isLeft = side === 'left';
   return (
@@ -244,7 +394,6 @@ function downloadLetter(cfg: typeof CONFIG) {
   const paddingX = 48;
   const bodyMaxW = W - paddingX * 2;
 
-  // Mide líneas del cuerpo
   const tempCanvas = document.createElement('canvas');
   const tempCtx = tempCanvas.getContext('2d')!;
   tempCtx.font = '14px serif';
@@ -276,7 +425,6 @@ function downloadLetter(cfg: typeof CONFIG) {
     canvas.height = canvasH;
     const ctx = canvas.getContext('2d')!;
 
-    // Fondo
     const bg = ctx.createLinearGradient(0, 0, W * 0.4, canvasH);
     bg.addColorStop(0, '#1C1216');
     bg.addColorStop(1, '#160E12');
@@ -284,20 +432,16 @@ function downloadLetter(cfg: typeof CONFIG) {
     ctx.roundRect(0, 0, W, canvasH, 16);
     ctx.fill();
 
-    // Borde
     ctx.strokeStyle = 'rgba(78,49,60,0.5)';
     ctx.lineWidth = 1;
     ctx.roundRect(0.5, 0.5, W - 1, canvasH - 1, 16);
     ctx.stroke();
 
-    // --- Tulipanes esquina superior derecha ---
-    // Reproduce el SVG inline del card (viewBox 0 0 90 110, colocado en top-right)
     ctx.save();
     ctx.globalAlpha = 0.22;
-    const tScale = 1.15; // un poco más grandes que en la UI
+    const tScale = 1.15;
     ctx.translate(W - 90 * tScale, 0);
     ctx.scale(tScale, tScale);
-    // Helper para trazar path2D-style usando comandos simples
     const tp = (d: string, fill: string, alpha = 1) => {
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -314,61 +458,46 @@ function downloadLetter(cfg: typeof CONFIG) {
       ctx.stroke(new Path2D(d));
       ctx.restore();
     };
-    // Tallo izquierdo
     ts('M30 108 Q28 80 26 58', '#7B5EA7', 1.2);
-    // Hoja izquierda
     tp('M26 80 Q14 72 12 60 Q22 66 26 78Z', '#7B5EA7', 0.6);
-    // Tulipán izquierdo
     tp('M26 58 C20 50 18 38 26 30 C28 38 28 50 26 58Z', '#B39DDB');
     tp('M26 58 C32 50 34 38 26 30 C24 38 24 50 26 58Z', '#9575CD');
     tp('M26 58 C22 52 22 44 26 38 C30 44 30 52 26 58Z', '#CE93D8', 0.7);
-    // Tallo central
     ts('M48 108 Q46 75 44 50', '#7B5EA7', 1.4);
-    // Hoja central
     tp('M44 78 Q34 68 32 54 Q42 62 44 76Z', '#7B5EA7', 0.55);
-    // Tulipán central
     tp('M44 50 C36 40 34 25 44 15 C47 25 47 40 44 50Z', '#B39DDB');
     tp('M44 50 C52 40 54 25 44 15 C41 25 41 40 44 50Z', '#9575CD');
     tp('M44 50 C39 43 39 33 44 25 C49 33 49 43 44 50Z', '#CE93D8', 0.7);
-    // Tallo derecho
     ts('M66 108 Q65 82 63 62', '#7B5EA7', 1.2);
-    // Hoja derecha
     tp('M63 84 Q73 74 74 60 Q64 68 63 82Z', '#7B5EA7', 0.6);
-    // Tulipán derecho
     tp('M63 62 C57 54 55 42 63 34 C65 42 65 54 63 62Z', '#B39DDB');
     tp('M63 62 C69 54 71 42 63 34 C61 42 61 54 63 62Z', '#9575CD');
     tp('M63 62 C59 56 59 48 63 42 C67 48 67 56 63 62Z', '#CE93D8', 0.7);
     ctx.restore();
 
-    // --- Tulipán pequeño esquina inferior izquierda ---
     ctx.save();
     ctx.globalAlpha = 0.18;
     ctx.translate(0, canvasH - 75);
-    // Tallo 1
     ts('M20 74 Q19 55 18 40', '#7B5EA7', 1.2);
     tp('M18 58 Q8 50 7 38 Q16 44 18 56Z', '#7B5EA7', 0.6);
     tp('M18 40 C12 32 10 20 18 12 C20 20 20 32 18 40Z', '#B39DDB');
     tp('M18 40 C24 32 26 20 18 12 C16 20 16 32 18 40Z', '#9575CD');
     tp('M18 40 C14 34 14 26 18 20 C22 26 22 34 18 40Z', '#CE93D8', 0.7);
-    // Tallo 2
     ts('M36 74 Q35 58 34 45', '#7B5EA7', 1.0);
     tp('M34 60 Q42 52 43 42 Q35 48 34 58Z', '#7B5EA7', 0.5);
     tp('M34 45 C29 38 28 28 34 21 C36 28 36 38 34 45Z', '#B39DDB', 0.85);
     tp('M34 45 C39 38 40 28 34 21 C32 28 32 38 34 45Z', '#9575CD', 0.85);
     ctx.restore();
 
-    // --- Texto ---
     let y = 44;
     const cx = W / 2;
 
-    // Lugar
     ctx.font = '10px monospace';
     ctx.fillStyle = '#62464D';
     ctx.textAlign = 'right';
     ctx.fillText(lc.place.toUpperCase(), W - paddingX, y);
     y += lineH * 1.8;
 
-    // Para:
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8C7565';
     ctx.textAlign = 'left';
@@ -379,14 +508,12 @@ function downloadLetter(cfg: typeof CONFIG) {
     ctx.fillText(lc.to, paddingX, y);
     y += lineH * 1.6;
 
-    // Saludo
     ctx.font = '600 14px serif';
     ctx.fillStyle = '#EDE7E5';
     ctx.textAlign = 'left';
     ctx.fillText(lc.greeting, paddingX, y);
     y += lineH * 1.4;
 
-    // Cuerpo
     ctx.font = '14px serif';
     ctx.fillStyle = '#C9BFB8';
     for (const line of wrappedBody) {
@@ -396,13 +523,11 @@ function downloadLetter(cfg: typeof CONFIG) {
     }
     y += lineH;
 
-    // Despedida
     ctx.font = 'italic 12px serif';
     ctx.fillStyle = '#8C7565';
     ctx.fillText(lc.farewell, paddingX, y);
     y += lineH * 1.2;
 
-    // Firma + imagen de firma en la misma fila
     ctx.font = '600 18px serif';
     ctx.fillStyle = '#E8A598';
     ctx.fillText(lc.signature, paddingX, y);
@@ -416,8 +541,6 @@ function downloadLetter(cfg: typeof CONFIG) {
     }
 
     y += lineH * 2;
-
-    // Pie decorativo
     ctx.fillStyle = '#4E313C';
     ctx.fillRect(cx - 30, y, 60, 1);
 
@@ -427,7 +550,6 @@ function downloadLetter(cfg: typeof CONFIG) {
     link.click();
   }
 
-  // Carga la imagen de firma antes de renderizar
   if (lc.signatureImage) {
     const img = new Image();
     img.onload = () => renderToCanvas(img);
@@ -442,6 +564,15 @@ function downloadLetter(cfg: typeof CONFIG) {
 export default function App() {
   const [introComplete, setIntroComplete] = useState(false);
   const [contentVisible, setContentVisible] = useState(false);
+
+  // ─── NUEVO: Verificar si ya cumplió 3 meses ───
+  const monthsElapsed = getMonthsElapsed(CONFIG.anniversaryDate);
+  const hasReached3Months = monthsElapsed >= 3;
+
+  // Si aún no llega a 3 meses, mostrar solo la pantalla de espera
+  if (!hasReached3Months) {
+    return <WaitingScreen startDate={CONFIG.anniversaryDate} />;
+  }
 
   return (
     <>
@@ -490,12 +621,10 @@ export default function App() {
 
         {/* SECCIÓN 0: Intro de la página */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
-          {/* Brillo central suave */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(ellipse 55% 45% at 50% 52%, rgba(232,165,152,0.10) 0%, transparent 65%)' }}
           />
-          {/* Pétalos puntitos decorativos */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
             {[
               { cx: '12%', cy: '22%', r: 2.5, o: 0.13 },
@@ -607,7 +736,6 @@ export default function App() {
 
         {/* SECCIÓN 4: Galería */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
-          {/* Glow más visible: dos radiales rosadas superpuestas */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -616,7 +744,6 @@ export default function App() {
                 'radial-gradient(ellipse 35% 25% at 18% 28%, rgba(181,159,159,0.10) 0%, transparent 60%)',
             }}
           />
-          {/* Borde de luz en el fondo */}
           <div
             className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
             style={{ background: 'linear-gradient(to top, rgba(78,49,60,0.08) 0%, transparent 100%)' }}
@@ -640,7 +767,6 @@ export default function App() {
 
         {/* SECCIÓN 5: Carta */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
-          {/* Textura de papel (fractal noise) */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -649,18 +775,15 @@ export default function App() {
               opacity: 0.045,
             }}
           />
-          {/* Viñeta perimetral */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(ellipse 85% 75% at 50% 50%, transparent 35%, rgba(19,13,15,0.6) 100%)' }}
           />
-          {/* Líneas de papel pautado muy sutiles */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 30px, rgba(78,49,60,0.05) 30px, rgba(78,49,60,0.05) 31px)' }}
           />
 
-          {/* Tarjeta de carta */}
           <FadeInSection direction="up" delay={0} className="w-full max-w-xl relative z-10">
             <div
               className="relative rounded-2xl px-6 sm:px-10 py-8 shadow-2xl shadow-black/60"
@@ -669,7 +792,6 @@ export default function App() {
                 border: '1px solid rgba(78,49,60,0.35)',
               }}
             >
-              {/* Botón de guardar carta — esquina superior derecha */}
               <button
                 type="button"
                 onClick={() => downloadLetter(CONFIG)}
@@ -682,7 +804,6 @@ export default function App() {
                   <polyline points="7 3 7 8 15 8"/>
                 </svg>
               </button>
-              {/* Tulipanes lilas decorativos — esquina superior derecha */}
               <svg
                 aria-hidden="true"
                 className="absolute top-0 right-0 pointer-events-none"
@@ -690,33 +811,23 @@ export default function App() {
                 viewBox="0 0 90 110"
                 style={{ opacity: 0.22 }}
               >
-                {/* Tallo izquierdo */}
                 <path d="M30 108 Q28 80 26 58" stroke="#7B5EA7" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-                {/* Hoja izquierda */}
                 <path d="M26 80 Q14 72 12 60 Q22 66 26 78Z" fill="#7B5EA7" opacity="0.6"/>
-                {/* Tulipán izquierdo */}
                 <path d="M26 58 C20 50 18 38 26 30 C28 38 28 50 26 58Z" fill="#B39DDB"/>
                 <path d="M26 58 C32 50 34 38 26 30 C24 38 24 50 26 58Z" fill="#9575CD"/>
                 <path d="M26 58 C22 52 22 44 26 38 C30 44 30 52 26 58Z" fill="#CE93D8" opacity="0.7"/>
-                {/* Tallo central */}
                 <path d="M48 108 Q46 75 44 50" stroke="#7B5EA7" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
-                {/* Hoja central */}
                 <path d="M44 78 Q34 68 32 54 Q42 62 44 76Z" fill="#7B5EA7" opacity="0.55"/>
-                {/* Tulipán central — más grande */}
                 <path d="M44 50 C36 40 34 25 44 15 C47 25 47 40 44 50Z" fill="#B39DDB"/>
                 <path d="M44 50 C52 40 54 25 44 15 C41 25 41 40 44 50Z" fill="#9575CD"/>
                 <path d="M44 50 C39 43 39 33 44 25 C49 33 49 43 44 50Z" fill="#CE93D8" opacity="0.7"/>
-                {/* Tallo derecho */}
                 <path d="M66 108 Q65 82 63 62" stroke="#7B5EA7" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-                {/* Hoja derecha */}
                 <path d="M63 84 Q73 74 74 60 Q64 68 63 82Z" fill="#7B5EA7" opacity="0.6"/>
-                {/* Tulipán derecho */}
                 <path d="M63 62 C57 54 55 42 63 34 C65 42 65 54 63 62Z" fill="#B39DDB"/>
                 <path d="M63 62 C69 54 71 42 63 34 C61 42 61 54 63 62Z" fill="#9575CD"/>
                 <path d="M63 62 C59 56 59 48 63 42 C67 48 67 56 63 62Z" fill="#CE93D8" opacity="0.7"/>
               </svg>
 
-              {/* Tulipán pequeño solitario — esquina inferior izquierda */}
               <svg
                 aria-hidden="true"
                 className="absolute bottom-0 left-0 pointer-events-none"
@@ -729,32 +840,27 @@ export default function App() {
                 <path d="M18 40 C12 32 10 20 18 12 C20 20 20 32 18 40Z" fill="#B39DDB"/>
                 <path d="M18 40 C24 32 26 20 18 12 C16 20 16 32 18 40Z" fill="#9575CD"/>
                 <path d="M18 40 C14 34 14 26 18 20 C22 26 22 34 18 40Z" fill="#CE93D8" opacity="0.7"/>
-                {/* Segundo tallito */}
                 <path d="M36 74 Q35 58 34 45" stroke="#7B5EA7" strokeWidth="1" fill="none" strokeLinecap="round"/>
                 <path d="M34 60 Q42 52 43 42 Q35 48 34 58Z" fill="#7B5EA7" opacity="0.5"/>
                 <path d="M34 45 C29 38 28 28 34 21 C36 28 36 38 34 45Z" fill="#B39DDB" opacity="0.85"/>
                 <path d="M34 45 C39 38 40 28 34 21 C32 28 32 38 34 45Z" fill="#9575CD" opacity="0.85"/>
               </svg>
 
-              {/* Lugar y fecha */}
               <FadeInSection direction="right" delay={80}>
                 <p className="text-[9px] font-mono tracking-widest text-[#62464D] uppercase text-right mb-5">
                   {CONFIG.loveLetter.place}
                 </p>
               </FadeInSection>
 
-              {/* Para: */}
               <FadeInSection direction="left" delay={160}>
                 <p className="text-[10px] font-mono tracking-widest text-[#8C7565] uppercase mb-1">Para:</p>
                 <p className="font-serif text-lg text-[#E8A598] italic mb-5">{CONFIG.loveLetter.to}</p>
               </FadeInSection>
 
-              {/* Saludo */}
               <FadeInSection direction="up" delay={240}>
                 <p className="font-serif text-sm text-[#EDE7E5] font-medium mb-4">{CONFIG.loveLetter.greeting}</p>
               </FadeInSection>
 
-              {/* Cuerpo */}
               <FadeInSection direction="up" delay={320}>
                 <div className="space-y-3 text-[#C9BFB8] font-serif text-xs sm:text-[13px] leading-relaxed font-light max-h-[28vh] overflow-y-auto pr-3 letter-scrollbar">
                   {CONFIG.loveLetter.body.map((paragraph, i) => (
@@ -763,7 +869,6 @@ export default function App() {
                 </div>
               </FadeInSection>
 
-              {/* Despedida + firma + imagen */}
               <FadeInSection direction="up" delay={420}>
                 <div className="mt-6 flex items-end justify-between gap-4">
                   <div>
@@ -785,7 +890,6 @@ export default function App() {
 
         {/* SECCIÓN 6: Ruleta */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 text-center relative overflow-hidden">
-          {/* Partículas ornamentales */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
             {[
               { x: '12%', y: '18%', size: 22, rot: 15, o: 0.08 },
