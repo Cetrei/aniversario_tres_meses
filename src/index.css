@@ -92,4 +92,32 @@
   .animate-confetti {
     animation: fallAndSpin 3.5s linear forwards;
   }
+
+  /* Scrollbar sutil para la carta */
+  .letter-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(160, 120, 160, 0.35) transparent;
+  }
+  .letter-scrollbar::-webkit-scrollbar {
+    width: 3px;
+  }
+  .letter-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .letter-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(160, 120, 160, 0.35);
+    border-radius: 99px;
+  }
+  .letter-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(180, 140, 200, 0.55);
+  }
+
+  @keyframes bounceSlow {
+    0%, 100% { transform: translateY(0); opacity: 0.6; }
+    50% { transform: translateY(6px); opacity: 1; }
+  }
+
+  .animate-bounce-slow {
+    animation: bounceSlow 2.2s ease-in-out infinite;
+  }
 }

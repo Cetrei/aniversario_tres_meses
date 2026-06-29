@@ -48,13 +48,30 @@ export interface Names {
   to: string;
 }
 
+export interface LoveLetter {
+  /** e.g. "San José, 1 de julio de 2026" */
+  place: string;
+  /** A quién va dirigida */
+  to: string;
+  /** Saludo inicial, e.g. "Mi Jimena bonita," */
+  greeting: string;
+  /** Párrafos del cuerpo principal */
+  body: string[];
+  /** Frase de despedida, e.g. "Con todo mi amor," */
+  farewell: string;
+  /** Firma — normalmente el nombre de quien escribe */
+  signature: string;
+  /** Ruta a /public de la imagen que aparece junto a la firma (e.g. dos ositos) */
+  signatureImage?: string;
+}
+
 export interface CoupleConfig {
   /** Link al repo de GitHub, se muestra en el footer. Dejar vacío para ocultarlo. */
   githubRepoUrl: string;
   names: Names;
   /** ISO string — fecha de inicio de la relación */
   anniversaryDate: string;
-  loveLetter: string[];
+  loveLetter: LoveLetter;
   photos: PhotoEntry[];
   buseta: BusetaLayout;
   dateIdeas: DateIdea[];
@@ -70,11 +87,19 @@ export const CONFIG: CoupleConfig = {
 
   anniversaryDate: "2026-04-01T00:00:00",
 
-  loveLetter: [
-    "Hay algo profundamente hermoso en la forma en que decidimos entrelazar nuestras vidas. Sin prisas, sin pretensiones, simplemente dejando que la complicidad hiciera su trabajo en cada conversación y en cada silencio compartido.",
-    "Llevamos apenas tres meses, pero se sienten repletos de pequeñas certezas. Se sienten en la calidez de tu mano cuando caminamos sin rumbo, en la manera en que tus ojos iluminan los detalles que nadie más nota, y en ese plan absurdamente tierno de meter toda nuestra vida futura en una buseta.",
-    "Este espacio es un reflejo de nosotros: inmensamente suave por dentro. Gracias por ser mi lugar seguro, mi mejor coincidencia y la persona con la que quiero seguir recorriendo el camino.",
-  ],
+  loveLetter: {
+    place: "San José, 1 de julio de 2026",
+    to: "Jimena",
+    greeting: "Mi Jimena bonita,",
+    body: [
+      "Hay algo profundamente hermoso en la forma en que decidimos entrelazar nuestras vidas. Sin prisas, sin pretensiones, simplemente dejando que la complicidad hiciera su trabajo en cada conversación y en cada silencio compartido.",
+      "Llevamos apenas tres meses, pero se sienten repletos de pequeñas certezas. Se sienten en la calidez de tu mano cuando caminamos sin rumbo, en la manera en que tus ojos iluminan los detalles que nadie más nota, y en ese plan absurdamente tierno de meter toda nuestra vida futura en una buseta.",
+      "Este espacio es un reflejo de nosotros: inmensamente suave por dentro. Gracias por ser mi lugar seguro, mi mejor coincidencia y la persona con la que quiero seguir recorriendo el camino.",
+    ],
+    farewell: "Con todo mi amor,",
+    signature: "Joanfer",
+    signatureImage: "/images/ositos.webp",
+  },
 
   photos: [
     {

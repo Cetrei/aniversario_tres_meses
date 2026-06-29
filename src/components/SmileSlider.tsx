@@ -148,7 +148,13 @@ export default function SmileSlider() {
         </div>
       </div>
 
-      <div className="w-full h-[120px] sm:h-[150px] relative flex items-center justify-center">
+      <div
+        className="w-full h-[120px] sm:h-[150px] relative flex items-center justify-center overflow-hidden"
+        style={{
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+          maskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+        }}
+      >
         <PeacefulWave smileLevel={smileLevel} />
       </div>
 

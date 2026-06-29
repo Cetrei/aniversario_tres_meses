@@ -162,25 +162,50 @@ export default function DateRoulette({ options }: DateRouletteProps) {
   const [selected, setSelected] = useState<DateIdea | null>(null);
   const [spinCount, setSpinCount] = useState(0);
   const [confetti, setConfetti] = useState<ConfettiPetal[]>([]);
+  // Sistema de pool: índices restantes por salir
+  const [pool, setPool] = useState<number[]>([]);
+  // Tras ver todos: modo de selección manual
+  const [seenAll, setSeenAll] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /** Obtiene el próximo índice del pool (sin repetición) y actualiza el pool. */
+  const drawFromPool = useCallback((currentPool: number[]): { nextIndex: number; newPool: number[] } => {
+    let workPool = currentPool.length > 0 ? [...currentPool] : options.map((_, i) => i);
+
+    const randomPos = Math.floor(Math.random() * workPool.length);
+    const nextIndex = workPool[randomPos];
+    workPool.splice(randomPos, 1);
+
+    return { nextIndex, newPool: workPool };
+  }, [options]);
 
   const spin = useCallback(() => {
     if (spinning) return;
     setSpinning(true);
     setConfetti([]);
+    setShowManual(false);
 
     let count = 0;
     const totalSteps = 25 + Math.floor(Math.random() * 8);
 
+    // Animación rápida: muestra opciones al azar (solo visual, no quita del pool)
     intervalRef.current = setInterval(() => {
       setSelected(options[Math.floor(Math.random() * options.length)]);
       count++;
       if (count >= totalSteps) {
         clearInterval(intervalRef.current!);
-        const final = options[Math.floor(Math.random() * options.length)];
+
+        // El resultado real sí viene del pool
+        const { nextIndex, newPool } = drawFromPool(pool);
+        const final = options[nextIndex];
+
+        const allSeen = newPool.length === 0;
+        setPool(newPool);
         setSelected(final);
         setSpinning(false);
         setSpinCount((n) => n + 1);
+        if (allSeen) setSeenAll(true);
 
         // Lluvia de confeti orgánica en forma de pétalos cayendo
         const petalColors = ['#E8A598', '#FFD4E2', '#FFFDFD', '#543641'];
@@ -195,7 +220,13 @@ export default function DateRoulette({ options }: DateRouletteProps) {
         setConfetti(particles);
       }
     }, 90);
-  }, [spinning, options]);
+  }, [spinning, options, pool, drawFromPool]);
+
+  const resetPool = () => {
+    setPool([]);
+    setSeenAll(false);
+    setShowManual(false);
+  };
 
   return (
     <div className="space-y-8 max-w-md mx-auto relative select-none">
@@ -219,10 +250,10 @@ export default function DateRoulette({ options }: DateRouletteProps) {
         </div>
       )}
 
+      {/* Tarjeta resultado */}
       <div className="min-h-[130px] flex flex-col items-center justify-center px-2">
         {spinning ? (
           <div className="flex flex-col items-center gap-3">
-            {/* CORREGIDO: Uso de animate-spin nativo */}
             <span className="text-2xl text-[#E8A598] inline-block animate-spin">
               ✦
             </span>
@@ -238,6 +269,12 @@ export default function DateRoulette({ options }: DateRouletteProps) {
             <p className="text-xs sm:text-sm text-[#B59F9F] font-sans font-light leading-relaxed">
               {selected.description}
             </p>
+            {/* Indicador de progreso del pool */}
+            <p className="text-[9px] font-mono text-[#62464D] tracking-wide pt-1">
+              {seenAll
+                ? '✦ Ya exploraste todas las ideas ✦'
+                : `${options.length - pool.length} / ${options.length} ideas exploradas`}
+            </p>
           </div>
         ) : (
           <p className="text-xs sm:text-sm text-[#62464D] font-serif italic text-center">
@@ -246,18 +283,65 @@ export default function DateRoulette({ options }: DateRouletteProps) {
         )}
       </div>
 
+      {/* Botones principales */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
-        <button
-          onClick={spin}
-          disabled={spinning}
-          className={`w-full sm:w-auto py-3.5 px-8 rounded-full font-sans font-light text-xs tracking-wide transition-all duration-500 border ${
-            spinning
-              ? 'bg-transparent border-[#2D1C22] text-[#4E313C] cursor-not-allowed'
-              : 'bg-[#E8A598]/5 border-[#E8A598]/20 text-[#E8A598] hover:bg-[#E8A598]/10 hover:border-[#E8A598]/50'
-          }`}
-        >
-          {spinning ? 'Garantizando sorpresas...' : spinCount === 0 ? 'Descubrir una idea' : 'Girar de nuevo ✦'}
-        </button>
+        {!seenAll ? (
+          <button
+            onClick={spin}
+            disabled={spinning}
+            className={`w-full sm:w-auto py-3.5 px-8 rounded-full font-sans font-light text-xs tracking-wide transition-all duration-500 border ${
+              spinning
+                ? 'bg-transparent border-[#2D1C22] text-[#4E313C] cursor-not-allowed'
+                : 'bg-[#E8A598]/5 border-[#E8A598]/20 text-[#E8A598] hover:bg-[#E8A598]/10 hover:border-[#E8A598]/50'
+            }`}
+          >
+            {spinning ? 'Garantizando sorpresas...' : spinCount === 0 ? 'Descubrir una idea' : 'Girar de nuevo ✦'}
+          </button>
+        ) : (
+          /* Tras ver todas: botón de reinicio + selección manual */
+          <div className="flex flex-col items-center gap-3 w-full">
+            <p className="text-xs font-serif italic text-[#8C7565] text-center">
+              ¡Viste todas las ideas! ¿Quieres una en particular?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
+              <button
+                onClick={resetPool}
+                className="w-full sm:w-auto py-3 px-6 rounded-full font-sans font-light text-xs tracking-wide border border-[#E8A598]/20 text-[#E8A598] hover:bg-[#E8A598]/10 transition-all duration-300"
+              >
+                Volver a girar ✦
+              </button>
+              <button
+                onClick={() => setShowManual((v) => !v)}
+                className="w-full sm:w-auto py-3 px-6 rounded-full font-sans font-light text-xs tracking-wide border border-[#2D1C22] text-[#8C7565] hover:border-[#8C7565] hover:text-[#FFFDFD] transition-all duration-300"
+              >
+                {showManual ? 'Cerrar lista' : 'Elegir manualmente'}
+              </button>
+            </div>
+
+            {/* Lista de selección manual */}
+            {showManual && (
+              <div className="w-full mt-2 space-y-2">
+                {options.map((opt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSelected(opt);
+                      setSpinCount((n) => n + 1);
+                      setShowManual(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 ${
+                      selected?.title === opt.title
+                        ? 'border-[#E8A598]/40 bg-[#E8A598]/8 text-[#FFFDFD]'
+                        : 'border-[#2D1C22] text-[#B59F9F] hover:border-[#4E313C] hover:text-[#EDE7E5]'
+                    }`}
+                  >
+                    <span className="text-sm font-serif">{opt.title}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {selected && !spinning && (
           <button

@@ -45,7 +45,7 @@ function PassengerSeat({
           {passenger.icon}
         </span>
       )}
-      <span className="text-[8px] font-mono tracking-wider text-[#B59F9F] uppercase leading-none">
+      <span className="text-[8px] font-mono tracking-wider text-[#D4AFA5] font-semibold uppercase leading-none">
         {passenger.name.split(' ')[0]}
       </span>
     </button>
@@ -56,7 +56,7 @@ export default function Buseta({ buseta }: BusetaProps) {
   const [selected, setSelected] = useState<PassengerEntry>(buseta.pilot);
 
   return (
-    <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
+    <div className="grid md:grid-cols-2 gap-8 lg:gap-20 items-center w-full">
       {/* Plano de la buseta */}
       <div className="flex justify-center">
         <div
@@ -64,17 +64,7 @@ export default function Buseta({ buseta }: BusetaProps) {
           style={{ minWidth: 240, maxWidth: 300 }}
           aria-label="Plano de la buseta"
         >
-          {/* Frente */}
-          <div className="flex items-center justify-center mb-3 pb-3 border-b border-[#2D1C22]">
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-8 h-8 rounded-full border-2 border-[#3C282D] flex items-center justify-center">
-                <span className="text-xs text-[#62464D]">🚌</span>
-              </div>
-              <span className="text-[7px] font-mono tracking-widest text-[#62464D] uppercase">Frente</span>
-            </div>
-          </div>
-
-          {/* Fila pilotos */}
+          {/* Fila pilotos — sin "Frente", solo el volante */}
           <div className="flex justify-between items-center mb-2 px-1">
             <PassengerSeat
               passenger={buseta.pilot}
@@ -82,9 +72,11 @@ export default function Buseta({ buseta }: BusetaProps) {
               onSelect={() => setSelected(buseta.pilot)}
               size="md"
             />
-            <div className="flex flex-col items-center gap-1 opacity-20">
-              <div className="w-8 h-8 rounded-full border border-[#3C282D]" />
-              <span className="text-[6px] font-mono text-[#62464D]">VOLANTE</span>
+            <div className="flex flex-col items-center gap-1 opacity-40">
+              <div className="w-8 h-8 rounded-full border border-[#E8A598]/40 flex items-center justify-center">
+                <span className="text-xs">🚌</span>
+              </div>
+              <span className="text-[7px] font-mono text-[#D4AFA5] font-semibold tracking-wide">VOLANTE</span>
             </div>
             <PassengerSeat
               passenger={buseta.copilot}
@@ -137,12 +129,6 @@ export default function Buseta({ buseta }: BusetaProps) {
               />
             ))}
           </div>
-
-          <div className="mt-3 text-center">
-            <span className="text-[7px] font-mono tracking-widest text-[#3C282D] uppercase">
-              15 Asientos · Nuestra vida en movimiento
-            </span>
-          </div>
         </div>
       </div>
 
@@ -163,7 +149,7 @@ export default function Buseta({ buseta }: BusetaProps) {
               <span className="text-5xl leading-none">{selected.icon}</span>
             )}
             <div>
-              <span className="text-xs font-mono italic text-[#8C7565] block">
+              <span className="text-xs font-mono italic text-[#B59F9F] block">
                 {selected.role}
               </span>
               <h4 className="text-3xl font-serif font-bold text-[#FFFDFD] mt-1">
