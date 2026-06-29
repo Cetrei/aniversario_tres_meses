@@ -168,6 +168,8 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
   const [currentSpinPhrase, setCurrentSpinPhrase] = useState('');
   // Sistema de pool: índices restantes por salir
   const [pool, setPool] = useState<number[]>([]);
+  // Pool de frases: misma metodología que el pool de opciones
+  const [phrasePool, setPhrasePool] = useState<number[]>([]);
   // Tras ver todos: modo de selección manual
   const [seenAll, setSeenAll] = useState(false);
   const [showManual, setShowManual] = useState(false);
@@ -175,16 +177,23 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
 
   const STEP_INTERVAL_MS = 90;
 
-  /** Obtiene el próximo índice del pool (sin repetición) y actualiza el pool. */
-  const drawFromPool = useCallback((currentPool: number[]): { nextIndex: number; newPool: number[] } => {
-    let workPool = currentPool.length > 0 ? [...currentPool] : options.map((_, i) => i);
+  /** Obtiene el próximo índice de un pool genérico (sin repetición hasta agotar todos). */
+  const drawFromGenericPool = useCallback(
+    (currentPool: number[], totalCount: number): { nextIndex: number; newPool: number[] } => {
+      const workPool = currentPool.length > 0 ? [...currentPool] : Array.from({ length: totalCount }, (_, i) => i);
+      const randomPos = Math.floor(Math.random() * workPool.length);
+      const nextIndex = workPool[randomPos];
+      workPool.splice(randomPos, 1);
+      return { nextIndex, newPool: workPool };
+    },
+    []
+  );
 
-    const randomPos = Math.floor(Math.random() * workPool.length);
-    const nextIndex = workPool[randomPos];
-    workPool.splice(randomPos, 1);
-
-    return { nextIndex, newPool: workPool };
-  }, [options]);
+  /** Conveniencia: pool de opciones de cita. */
+  const drawFromPool = useCallback(
+    (currentPool: number[]) => drawFromGenericPool(currentPool, options.length),
+    [drawFromGenericPool, options.length]
+  );
 
   const spin = useCallback(() => {
     if (spinning) return;
@@ -192,9 +201,11 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
     setConfetti([]);
     setShowManual(false);
 
-    // Elige una frase al azar de las configuradas
+    // Elige la siguiente frase del pool (sin repetición hasta agotar todas)
     const phrases = spinPhrases.length > 0 ? spinPhrases : ['Buscando nuestro próximo destino...'];
-    setCurrentSpinPhrase(phrases[Math.floor(Math.random() * phrases.length)]);
+    const { nextIndex: phraseIdx, newPool: newPhrasePool } = drawFromGenericPool(phrasePool, phrases.length);
+    setPhrasePool(newPhrasePool);
+    setCurrentSpinPhrase(phrases[phraseIdx]);
 
     // Calcula el número de pasos a partir de la duración configurada
     const totalSteps = Math.max(8, Math.round(spinDurationMs / STEP_INTERVAL_MS));
@@ -231,10 +242,11 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
         setConfetti(particles);
       }
     }, STEP_INTERVAL_MS);
-  }, [spinning, options, pool, drawFromPool, spinPhrases, spinDurationMs]);
+  }, [spinning, options, pool, phrasePool, drawFromPool, drawFromGenericPool, spinPhrases, spinDurationMs]);
 
   const resetPool = () => {
     setPool([]);
+    setPhrasePool([]);
     setSeenAll(false);
     setShowManual(false);
   };

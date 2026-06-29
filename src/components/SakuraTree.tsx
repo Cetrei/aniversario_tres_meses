@@ -760,6 +760,26 @@ export default function SakuraTree({ startDate, treeConfig }: SakuraTreeProps) {
         !
       </button>
 
+      <button
+        type="button"
+        onClick={() => {
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const link = document.createElement('a');
+          link.href = canvas.toDataURL('image/png');
+          link.download = 'nuestro_arbol_sakura.png';
+          link.click();
+        }}
+        aria-label="Guardar árbol como imagen"
+        className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full flex items-center justify-center text-[#E8A598] border border-[#E8A598]/30 bg-[#130D0F]/60 hover:bg-[#E8A598]/15 hover:border-[#E8A598]/60 transition-all duration-300 backdrop-blur-sm shadow-lg"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+      </button>
+
       {showInfo && (
         <div
           className="absolute top-12 left-3 z-30 rounded-2xl p-4 max-w-[84%] shadow-2xl"

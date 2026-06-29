@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CONFIG } from './config';
 import FadeInSection from './components/FadeInSection';
 import SakuraTree from './components/SakuraTree';
