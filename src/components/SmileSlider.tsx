@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
+// Ahora son 6 mensajes precisos para cubrir las 6 etapas (0, 20, 40, 60, 80, 100)
 const SMILE_MESSAGES: { threshold: number; text: string }[] = [
   { threshold: 0,   text: 'A veces el ruido del día es ensordecedor y me llena de estrés...' },
   { threshold: 20,  text: 'Pero empiezo a pensar en ti y todo el entorno se suaviza poco a poco.' },
@@ -17,8 +18,10 @@ function getSmileMessage(level: number): string {
   return msg;
 }
 
-const TICK_POSITIONS = [0, 20, 45, 75, 100];
+// Exactamente 6 ticks (cada 20%)
+const TICK_POSITIONS = [0, 20, 40, 60, 80, 100];
 
+// ─── TÚ ONDA SVG ORIGINAL INTACTA ─────────────────────────────
 function PeacefulWave({ smileLevel }: { smileLevel: number }) {
   const offsetRef = useRef(0);
   const pathMainRef = useRef<SVGPathElement>(null);
@@ -100,6 +103,7 @@ function PeacefulWave({ smileLevel }: { smileLevel: number }) {
   );
 }
 
+// ─── Componente principal ─────────────────────────────────────
 export default function SmileSlider() {
   const [smileLevel, setSmileLevel] = useState(0);
   const message = getSmileMessage(smileLevel);
@@ -109,8 +113,8 @@ export default function SmileSlider() {
   };
 
   return (
-    <div className="w-full mt-16 space-y-12">
-      <div className="space-y-4 max-w-md mx-auto relative">
+    <div className="w-full mt-6 sm:mt-10 space-y-12">
+      <div className="space-y-4 max-w-md mx-auto relative px-2 sm:px-0">
         <div className="relative w-full h-8 flex items-center">
           <div className="absolute w-full h-[2px] bg-[#2D1C22] rounded-full" />
           <div
@@ -135,6 +139,8 @@ export default function SmileSlider() {
             aria-label="Nivel de la sonrisa"
           />
         </div>
+        
+        {/* TUS TEXTOS ORIGINALES RESTAURADOS EXACTAMENTE */}
         <div className="flex justify-between text-[9px] font-mono text-[#8C7565] tracking-widest">
           <span>DÍA AGITADO</span>
           <span>TU SONRISA</span>
@@ -142,14 +148,14 @@ export default function SmileSlider() {
         </div>
       </div>
 
-      <div className="w-full h-[150px] relative flex items-center justify-center">
+      <div className="w-full h-[120px] sm:h-[150px] relative flex items-center justify-center">
         <PeacefulWave smileLevel={smileLevel} />
       </div>
 
-      <div className="max-w-xl mx-auto min-h-[80px] flex items-center justify-center">
+      <div className="max-w-xl mx-auto min-h-[80px] flex items-center justify-center px-4 text-center">
         <p
           key={message}
-          className="text-xl sm:text-2xl font-serif italic text-[#E8A598] tracking-wide leading-relaxed animate-fade-in-up text-center"
+          className="text-lg sm:text-2xl font-serif italic text-[#E8A598] tracking-wide leading-relaxed animate-fade-in-up"
         >
           "{message}"
         </p>
