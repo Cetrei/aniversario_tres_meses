@@ -262,90 +262,180 @@ function downloadLetter(cfg: typeof CONFIG) {
       }
     }
     if (line) wrappedBody.push(line);
-    wrappedBody.push(''); // espacio entre párrafos
+    wrappedBody.push('');
   }
 
-  const headerLines = 7; // place, para-label, to, greeting + padding
-  const footerLines = 3; // farewell, signature
+  const headerLines = 7;
+  const footerLines = 3;
   const H = (headerLines + wrappedBody.length + footerLines + 3) * lineH + 96;
+  const canvasH = Math.max(H, 480);
 
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = Math.max(H, 480);
-  const ctx = canvas.getContext('2d')!;
+  function renderToCanvas(sigImg: HTMLImageElement | null) {
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = canvasH;
+    const ctx = canvas.getContext('2d')!;
 
-  // Fondo
-  const bg = ctx.createLinearGradient(0, 0, W * 0.4, H);
-  bg.addColorStop(0, '#1C1216');
-  bg.addColorStop(1, '#160E12');
-  ctx.fillStyle = bg;
-  ctx.roundRect(0, 0, W, canvas.height, 16);
-  ctx.fill();
+    // Fondo
+    const bg = ctx.createLinearGradient(0, 0, W * 0.4, canvasH);
+    bg.addColorStop(0, '#1C1216');
+    bg.addColorStop(1, '#160E12');
+    ctx.fillStyle = bg;
+    ctx.roundRect(0, 0, W, canvasH, 16);
+    ctx.fill();
 
-  // Borde
-  ctx.strokeStyle = 'rgba(78,49,60,0.5)';
-  ctx.lineWidth = 1;
-  ctx.roundRect(0.5, 0.5, W - 1, canvas.height - 1, 16);
-  ctx.stroke();
+    // Borde
+    ctx.strokeStyle = 'rgba(78,49,60,0.5)';
+    ctx.lineWidth = 1;
+    ctx.roundRect(0.5, 0.5, W - 1, canvasH - 1, 16);
+    ctx.stroke();
 
-  let y = 44;
-  const cx = W / 2;
+    // --- Tulipanes esquina superior derecha ---
+    // Reproduce el SVG inline del card (viewBox 0 0 90 110, colocado en top-right)
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    const tScale = 1.15; // un poco más grandes que en la UI
+    ctx.translate(W - 90 * tScale, 0);
+    ctx.scale(tScale, tScale);
+    // Helper para trazar path2D-style usando comandos simples
+    const tp = (d: string, fill: string, alpha = 1) => {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = fill;
+      const p = new Path2D(d);
+      ctx.fill(p);
+      ctx.restore();
+    };
+    const ts = (d: string, stroke: string, lw: number, lc2: CanvasLineCap = 'round') => {
+      ctx.save();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lw;
+      ctx.lineCap = lc2;
+      ctx.stroke(new Path2D(d));
+      ctx.restore();
+    };
+    // Tallo izquierdo
+    ts('M30 108 Q28 80 26 58', '#7B5EA7', 1.2);
+    // Hoja izquierda
+    tp('M26 80 Q14 72 12 60 Q22 66 26 78Z', '#7B5EA7', 0.6);
+    // Tulipán izquierdo
+    tp('M26 58 C20 50 18 38 26 30 C28 38 28 50 26 58Z', '#B39DDB');
+    tp('M26 58 C32 50 34 38 26 30 C24 38 24 50 26 58Z', '#9575CD');
+    tp('M26 58 C22 52 22 44 26 38 C30 44 30 52 26 58Z', '#CE93D8', 0.7);
+    // Tallo central
+    ts('M48 108 Q46 75 44 50', '#7B5EA7', 1.4);
+    // Hoja central
+    tp('M44 78 Q34 68 32 54 Q42 62 44 76Z', '#7B5EA7', 0.55);
+    // Tulipán central
+    tp('M44 50 C36 40 34 25 44 15 C47 25 47 40 44 50Z', '#B39DDB');
+    tp('M44 50 C52 40 54 25 44 15 C41 25 41 40 44 50Z', '#9575CD');
+    tp('M44 50 C39 43 39 33 44 25 C49 33 49 43 44 50Z', '#CE93D8', 0.7);
+    // Tallo derecho
+    ts('M66 108 Q65 82 63 62', '#7B5EA7', 1.2);
+    // Hoja derecha
+    tp('M63 84 Q73 74 74 60 Q64 68 63 82Z', '#7B5EA7', 0.6);
+    // Tulipán derecho
+    tp('M63 62 C57 54 55 42 63 34 C65 42 65 54 63 62Z', '#B39DDB');
+    tp('M63 62 C69 54 71 42 63 34 C61 42 61 54 63 62Z', '#9575CD');
+    tp('M63 62 C59 56 59 48 63 42 C67 48 67 56 63 62Z', '#CE93D8', 0.7);
+    ctx.restore();
 
-  // Lugar
-  ctx.font = '10px monospace';
-  ctx.fillStyle = '#62464D';
-  ctx.textAlign = 'right';
-  ctx.fillText(lc.place.toUpperCase(), W - paddingX, y);
-  y += lineH * 1.8;
+    // --- Tulipán pequeño esquina inferior izquierda ---
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.translate(0, canvasH - 75);
+    // Tallo 1
+    ts('M20 74 Q19 55 18 40', '#7B5EA7', 1.2);
+    tp('M18 58 Q8 50 7 38 Q16 44 18 56Z', '#7B5EA7', 0.6);
+    tp('M18 40 C12 32 10 20 18 12 C20 20 20 32 18 40Z', '#B39DDB');
+    tp('M18 40 C24 32 26 20 18 12 C16 20 16 32 18 40Z', '#9575CD');
+    tp('M18 40 C14 34 14 26 18 20 C22 26 22 34 18 40Z', '#CE93D8', 0.7);
+    // Tallo 2
+    ts('M36 74 Q35 58 34 45', '#7B5EA7', 1.0);
+    tp('M34 60 Q42 52 43 42 Q35 48 34 58Z', '#7B5EA7', 0.5);
+    tp('M34 45 C29 38 28 28 34 21 C36 28 36 38 34 45Z', '#B39DDB', 0.85);
+    tp('M34 45 C39 38 40 28 34 21 C32 28 32 38 34 45Z', '#9575CD', 0.85);
+    ctx.restore();
 
-  // Para:
-  ctx.font = '10px monospace';
-  ctx.fillStyle = '#8C7565';
-  ctx.textAlign = 'left';
-  ctx.fillText('PARA:', paddingX, y);
-  y += lineH * 0.9;
-  ctx.font = 'italic 20px serif';
-  ctx.fillStyle = '#E8A598';
-  ctx.fillText(lc.to, paddingX, y);
-  y += lineH * 1.6;
+    // --- Texto ---
+    let y = 44;
+    const cx = W / 2;
 
-  // Saludo
-  ctx.font = '600 14px serif';
-  ctx.fillStyle = '#EDE7E5';
-  ctx.textAlign = 'left';
-  ctx.fillText(lc.greeting, paddingX, y);
-  y += lineH * 1.4;
+    // Lugar
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#62464D';
+    ctx.textAlign = 'right';
+    ctx.fillText(lc.place.toUpperCase(), W - paddingX, y);
+    y += lineH * 1.8;
 
-  // Cuerpo
-  ctx.font = '14px serif';
-  ctx.fillStyle = '#C9BFB8';
-  for (const line of wrappedBody) {
-    if (line === '') { y += lineH * 0.5; continue; }
-    ctx.fillText(line, paddingX, y);
+    // Para:
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#8C7565';
+    ctx.textAlign = 'left';
+    ctx.fillText('PARA:', paddingX, y);
+    y += lineH * 0.9;
+    ctx.font = 'italic 20px serif';
+    ctx.fillStyle = '#E8A598';
+    ctx.fillText(lc.to, paddingX, y);
+    y += lineH * 1.6;
+
+    // Saludo
+    ctx.font = '600 14px serif';
+    ctx.fillStyle = '#EDE7E5';
+    ctx.textAlign = 'left';
+    ctx.fillText(lc.greeting, paddingX, y);
+    y += lineH * 1.4;
+
+    // Cuerpo
+    ctx.font = '14px serif';
+    ctx.fillStyle = '#C9BFB8';
+    for (const line of wrappedBody) {
+      if (line === '') { y += lineH * 0.5; continue; }
+      ctx.fillText(line, paddingX, y);
+      y += lineH;
+    }
     y += lineH;
+
+    // Despedida
+    ctx.font = 'italic 12px serif';
+    ctx.fillStyle = '#8C7565';
+    ctx.fillText(lc.farewell, paddingX, y);
+    y += lineH * 1.2;
+
+    // Firma + imagen de firma en la misma fila
+    ctx.font = '600 18px serif';
+    ctx.fillStyle = '#E8A598';
+    ctx.fillText(lc.signature, paddingX, y);
+
+    if (sigImg) {
+      const sigH = 72;
+      const sigW = Math.round((sigImg.naturalWidth / sigImg.naturalHeight) * sigH);
+      ctx.globalAlpha = 0.9;
+      ctx.drawImage(sigImg, W - paddingX - sigW, y - sigH + 10, sigW, sigH);
+      ctx.globalAlpha = 1;
+    }
+
+    y += lineH * 2;
+
+    // Pie decorativo
+    ctx.fillStyle = '#4E313C';
+    ctx.fillRect(cx - 30, y, 60, 1);
+
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = 'carta_de_amor.png';
+    link.click();
   }
-  y += lineH;
 
-  // Despedida
-  ctx.font = 'italic 12px serif';
-  ctx.fillStyle = '#8C7565';
-  ctx.fillText(lc.farewell, paddingX, y);
-  y += lineH * 1.2;
-
-  // Firma
-  ctx.font = '600 18px serif';
-  ctx.fillStyle = '#E8A598';
-  ctx.fillText(lc.signature, paddingX, y);
-  y += lineH * 2;
-
-  // Pie decorativo
-  ctx.fillStyle = '#4E313C';
-  ctx.fillRect(cx - 30, y, 60, 1);
-
-  const link = document.createElement('a');
-  link.href = canvas.toDataURL('image/png');
-  link.download = 'carta_de_amor.png';
-  link.click();
+  // Carga la imagen de firma antes de renderizar
+  if (lc.signatureImage) {
+    const img = new Image();
+    img.onload = () => renderToCanvas(img);
+    img.onerror = () => renderToCanvas(null);
+    img.src = lc.signatureImage;
+  } else {
+    renderToCanvas(null);
+  }
 }
 
 // APP PRINCIPAL
