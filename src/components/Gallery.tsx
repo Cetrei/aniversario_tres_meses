@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { PhotoEntry } from '../config';
 
 interface GalleryProps {
@@ -7,99 +7,138 @@ interface GalleryProps {
 
 export default function Gallery({ photos }: GalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [prevIndex, setPrevIndex] = useState<number | null>(null);
-  const [transitioning, setTransitioning] = useState(false);
-  const [direction, setDirection] = useState<1 | -1>(1); // 1=izq->der, -1=der->izq
+  const [exitingIndex, setExitingIndex] = useState<number | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const goTo = (index: number, dir?: 1 | -1) => {
-    if (transitioning || index === currentIndex) return;
+  // Calcula cuál es la foto que viene en la base profunda del mazo
+  const nextIndex = useMemo(() => {
+    if (!photos || photos.length === 0) return 0;
+    return (currentIndex + 1) % photos.length;
+  }, [currentIndex, photos?.length]);
+
+  const nextPhoto = () => {
+    if (!photos || photos.length <= 1 || exitingIndex !== null) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    const resolvedDir = dir ?? (index > currentIndex ? 1 : -1);
-    setDirection(resolvedDir);
-    setPrevIndex(currentIndex);
-    setCurrentIndex(index);
-    setTransitioning(true);
+    // 1. Guardamos la foto de arriba en el estado de "vuelo/descarte"
+    setExitingIndex(currentIndex);
+    // 2. Pasamos la cima estable de la pila a la siguiente foto INMEDIATAMENTE
+    setCurrentIndex(nextIndex);
 
+    // 3. Limpiamos el rastro de la foto vieja cuando termine su animación física (600ms)
     timeoutRef.current = setTimeout(() => {
-      setPrevIndex(null);
-      setTransitioning(false);
-    }, 480);
+      setExitingIndex(null);
+    }, 600);
   };
 
-  const nextPhoto = () => goTo((currentIndex + 1) % photos.length, 1);
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
-  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+  if (!photos || photos.length === 0) return null;
 
-  const current = photos[currentIndex];
-  const prev = prevIndex !== null ? photos[prevIndex] : null;
-
-  // La foto saliente se va en la dirección opuesta a la entrante
-  const slideOut = direction === 1 ? '-100%' : '100%';
-  const slideIn  = direction === 1 ?  '100%' : '-100%';
+  // Genera una rotación fija según el índice de la foto para que la pila se vea orgánica
+  const getStackStyle = (index: number, isTop: boolean) => {
+    const seededRandom = Math.sin(index + 8) * 10000;
+    const rotation = (seededRandom - Math.floor(seededRandom) - 0.5) * 7; // Entre -3.5° y 3.5°
+    return {
+      transform: `rotate(${rotation}deg)`,
+      zIndex: isTop ? 20 : 10,
+      '--start-rot': `${rotation}deg`,
+    } as React.CSSProperties;
+  };
 
   return (
     <div className="w-full max-w-[330px] flex flex-col items-center justify-center select-none">
-
-      <div
+      
+      {/* Contenedor principal con perspectiva 3D habilitada */}
+      <div 
         onClick={nextPhoto}
-        className="w-full bg-[#F4F1EA] p-4 pb-5 rounded-sm shadow-2xl shadow-black/80 transform rotate-1 hover:rotate-0 transition-all duration-500 cursor-pointer group"
+        className="relative w-full aspect-[3/4] cursor-pointer"
+        style={{ perspective: '1000px' }}
       >
-        {/* Contenedor con overflow hidden para que el slide quede dentro del marco */}
-        <div className="w-full aspect-square bg-[#E5E2DA] overflow-hidden relative border border-black/5 rounded-sm">
-
-          {/* Foto saliente: sale hacia slideOut */}
-          {prev && (
-            <img
-              key={`prev-${prevIndex}`}
-              src={prev.url}
-              alt={prev.displayName}
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{
-                objectPosition: prev.objectPosition ?? 'center center',
-                transform: transitioning ? `translateX(${slideOut})` : 'translateX(0%)',
-                transition: transitioning ? 'transform 420ms cubic-bezier(0.4,0,0.2,1)' : 'none',
-              }}
-            />
-          )}
-
-          {/* Foto entrante: entra desde slideIn y llega al centro */}
-          <img
-            key={`curr-${currentIndex}`}
-            src={current.url}
-            alt={current.displayName}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105"
-            style={{
-              objectPosition: current.objectPosition ?? 'center center',
-              transform: transitioning ? 'translateX(0%)' : 'translateX(0%)',
-              // Al montar empieza desplazada, luego se anima al centro
-              animation: transitioning ? `slideInFrom 420ms cubic-bezier(0.4,0,0.2,1) forwards` : 'none',
-              // Usamos una variable CSS para pasar el valor dinámico
-              ['--slide-from' as string]: slideIn,
-              transition: 'transform 700ms cubic-bezier(0.4,0,0.2,1)', // para el hover scale
-            }}
-          />
-
-          <div className="absolute inset-0 bg-[#3B1F27]/5 mix-blend-multiply pointer-events-none" />
-        </div>
-
-        {/* Caption */}
-        <div className="mt-4 min-h-[38px] flex items-center justify-center text-center px-1">
-          <p
-            className="italic text-[11px] sm:text-xs text-[#28191E] font-serif font-medium leading-tight line-clamp-2"
-            style={{
-              opacity: transitioning ? 0 : 1,
-              transition: 'opacity 200ms ease-in-out',
-            }}
+        
+        {/* 1. POLAROID DEL FONDO: Se asoma sutilmente abajo de todo en la pila */}
+        {photos.length > 1 && (
+          <div
+            key={`back-${nextIndex}`}
+            className="absolute inset-0 bg-[#F4F1EA] p-4 pb-5 rounded-sm shadow-xl border border-black/5 flex flex-col pointer-events-none"
+            style={getStackStyle(nextIndex, false)}
           >
-            "{current.caption}"
-          </p>
+            <div className="w-full aspect-square bg-[#E5E2DA] overflow-hidden relative border border-black/5 rounded-sm">
+              <img
+                src={photos[nextIndex].url}
+                alt={photos[nextIndex].displayName}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ objectPosition: photos[nextIndex].objectPosition ?? 'center center' }}
+              />
+              <div className="absolute inset-0 bg-[#3B1F27]/5 mix-blend-multiply pointer-events-none" />
+            </div>
+            <div className="mt-4 flex-1 flex items-center justify-center text-center px-1">
+              <p className="italic text-[11px] sm:text-xs text-[#28191E] font-serif font-medium leading-tight line-clamp-2">
+                "{photos[nextIndex].caption}"
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 2. POLAROID ACTUAL: Ahora SIEMPRE se queda renderizada a nivel zIndex: 20.
+            Al cambiar el currentIndex, se convierte instantáneamente en la foto que se revela abajo. */}
+        <div
+          key={`curr-${currentIndex}`}
+          className={`absolute inset-0 bg-[#F4F1EA] p-4 pb-5 rounded-sm shadow-2xl border border-black/5 flex flex-col transition-all duration-500 group ${
+            exitingIndex === null ? 'hover:rotate-0' : ''
+          }`}
+          style={getStackStyle(currentIndex, true)}
+        >
+          <div className="w-full aspect-square bg-[#E5E2DA] overflow-hidden relative border border-black/5 rounded-sm">
+            <img
+              src={photos[currentIndex].url}
+              alt={photos[currentIndex].displayName}
+              className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out ${
+                exitingIndex === null ? 'group-hover:scale-105' : ''
+              }`}
+              style={{ objectPosition: photos[currentIndex].objectPosition ?? 'center center' }}
+            />
+            <div className="absolute inset-0 bg-[#3B1F27]/5 mix-blend-multiply pointer-events-none" />
+          </div>
+          <div className="mt-4 flex-1 flex items-center justify-center text-center px-1">
+            <p className="italic text-[11px] sm:text-xs text-[#28191E] font-serif font-medium leading-tight line-clamp-2">
+              "{photos[currentIndex].caption}"
+            </p>
+          </div>
         </div>
+
+        {/* 3. POLAROID SALIENTE: Se superpone a nivel zIndex: 30 solo cuando vuela hacia afuera */}
+        {exitingIndex !== null && (
+          <div
+            key={`exit-${exitingIndex}`}
+            className="absolute inset-0 bg-[#F4F1EA] p-4 pb-5 rounded-sm shadow-2xl border border-black/5 flex flex-col animate-polaroid-flight pointer-events-none"
+            style={{ ...getStackStyle(exitingIndex, false), zIndex: 30 }}
+          >
+            <div className="w-full aspect-square bg-[#E5E2DA] overflow-hidden relative border border-black/5 rounded-sm">
+              <img
+                src={photos[exitingIndex].url}
+                alt={photos[exitingIndex].displayName}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ objectPosition: photos[exitingIndex].objectPosition ?? 'center center' }}
+              />
+              <div className="absolute inset-0 bg-[#3B1F27]/5 mix-blend-multiply pointer-events-none" />
+            </div>
+            <div className="mt-4 flex-1 flex items-center justify-center text-center px-1">
+              <p className="italic text-[11px] sm:text-xs text-[#28191E] font-serif font-medium leading-tight line-clamp-2">
+                "{photos[exitingIndex].caption}"
+              </p>
+            </div>
+          </div>
+        )}
+
       </div>
 
-      {/* Contador y dots */}
-      <div className="mt-4 flex flex-col items-center gap-1.5 w-full text-center">
+      {/* Contador e indicadores inferiores interactivos */}
+      <div className="mt-6 flex flex-col items-center gap-1.5 w-full text-center">
         <span className="text-[10px] font-mono tracking-widest text-[#62464D] uppercase">
           {currentIndex + 1} / {photos.length} — Toca la foto para avanzar
         </span>
@@ -107,7 +146,15 @@ export default function Gallery({ photos }: GalleryProps) {
           {photos.map((_, i) => (
             <button
               key={i}
-              onClick={(e) => { e.stopPropagation(); goTo(i); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                if (exitingIndex === null && i !== currentIndex) {
+                  setExitingIndex(currentIndex);
+                  setCurrentIndex(i);
+                  if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                  timeoutRef.current = setTimeout(() => setExitingIndex(null), 600);
+                }
+              }}
               aria-label={`Ver imagen ${i + 1}`}
               className={`h-1 rounded-full transition-all duration-300 ${
                 i === currentIndex ? 'w-4 bg-[#E8A598]' : 'w-1 bg-[#2D1C22]'
@@ -117,11 +164,20 @@ export default function Gallery({ photos }: GalleryProps) {
         </div>
       </div>
 
-      {/* Keyframe inyectado inline para el slide-in */}
+      {/* Animación fluida de descarte */}
       <style>{`
-        @keyframes slideInFrom {
-          from { transform: translateX(var(--slide-from)); }
-          to   { transform: translateX(0%); }
+        @keyframes polaroidSpread {
+          0% {
+            transform: translate(0, 0) rotate(var(--start-rot, 0deg)) rotateX(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(160px, -45px) rotate(24deg) rotateX(35deg);
+            opacity: 0;
+          }
+        }
+        .animate-polaroid-flight {
+          animation: polaroidSpread 600ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
       `}</style>
     </div>
