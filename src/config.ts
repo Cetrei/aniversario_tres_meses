@@ -248,7 +248,7 @@ export const CONFIG: CoupleConfig = {
   anniversaryDate: "2026-04-01T00:00:00",
 
 "loveLetter": {
-    "place": "San José, 1 de julio de 2026",
+    "place": "San José, 28 de junio de 2026",
     "to": "Jimena",
     "greeting": "Mi Enana Preciosa,",
     "body": [
