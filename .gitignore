@@ -1,5 +1,8 @@
 node_modules/
 .pnpm-store/
+dist/
+.venv/
+.wrangler/
 
 .dev/
 build/
