@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 
-// Ahora son 6 mensajes precisos para cubrir las 6 etapas (0, 20, 40, 60, 80, 100)
 const SMILE_MESSAGES: { threshold: number; text: string }[] = [
   { threshold: 0,   text: 'A veces el ruido del día es ensordecedor y me llena de estrés...' },
   { threshold: 20,  text: 'Pero empiezo a pensar en ti y todo el entorno se suaviza poco a poco.' },
@@ -21,7 +20,6 @@ function getSmileMessage(level: number): string {
 // Exactamente 6 ticks (cada 20%)
 const TICK_POSITIONS = [0, 20, 40, 60, 80, 100];
 
-// ─── TÚ ONDA SVG ORIGINAL INTACTA ─────────────────────────────
 function PeacefulWave({ smileLevel }: { smileLevel: number }) {
   const offsetRef = useRef(0);
   const pathMainRef = useRef<SVGPathElement>(null);
@@ -103,7 +101,7 @@ function PeacefulWave({ smileLevel }: { smileLevel: number }) {
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────
+// Componente principal
 export default function SmileSlider() {
   const [smileLevel, setSmileLevel] = useState(0);
   const message = getSmileMessage(smileLevel);

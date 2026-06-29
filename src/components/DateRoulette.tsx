@@ -297,7 +297,7 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
       </div>
 
       {/* Botones principales */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+      <div className="flex flex-col gap-3 items-center justify-center w-full">
         {!seenAll ? (
           <button
             onClick={spin}

@@ -7,7 +7,7 @@ import Buseta from './components/Buseta';
 import Gallery from './components/Gallery';
 import DateRoulette from './components/DateRoulette';
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+// HELPERS
 function getMonthsElapsed(startDate: string): number {
   const start = new Date(startDate);
   const now = new Date();
@@ -28,7 +28,7 @@ function getMonthNumber(months: number): string {
   return String(years);
 }
 
-// ─── PANTALLA DE INTRO CINEMATOGRÁFICA ───────────────────────────────────────
+// PANTALLA DE INTRO CINEMATOGRÁFICA
 // Secuencia de palabras que aparecen y desaparecen antes de revelar el sitio
 const INTRO_STEPS = [
   { text: 'Para ti.', sub: null, duration: 1400 },
@@ -163,7 +163,7 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
   );
 }
 
-// ─── LUCES AMBIENTALES ────────────────────────────────────────────────────────
+// LUCES AMBIENTALES
 function AmbientLights() {
   return (
     <>
@@ -179,7 +179,7 @@ function AmbientLights() {
   );
 }
 
-// ─── DECORACIÓN LATERAL (solo xl+) ───────────────────────────────────────────
+// DECORACIÓN LATERAL (solo xl+)
 function SideDecoration({ side }: { side: 'left' | 'right' }) {
   const isLeft = side === 'left';
   return (
@@ -234,7 +234,7 @@ function SideDecoration({ side }: { side: 'left' | 'right' }) {
   );
 }
 
-// ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
+// APP PRINCIPAL
 export default function App() {
   const [introComplete, setIntroComplete] = useState(false);
   const [contentVisible, setContentVisible] = useState(false);
@@ -284,7 +284,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* ── SECCIÓN 0: Intro de la página ─────────────────────── */}
+        {/* SECCIÓN 0: Intro de la página */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           {/* Brillo central suave */}
           <div
@@ -348,7 +348,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* ── SECCIÓN 1: Árbol Sakura ────────────────────────────── */}
+        {/* SECCIÓN 1: Árbol Sakura */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-start shrink-0 snap-start snap-always px-4 relative overflow-hidden pt-16 sm:pt-20">
           <div className="w-full max-w-xl flex flex-col items-center gap-y-4 sm:gap-y-10 h-full">
             <FadeInSection direction="down" delay={0}>
@@ -365,7 +365,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* ── SECCIÓN 2: SmileSlider ─────────────────────────────── */}
+        {/* SECCIÓN 2: SmileSlider */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           <div className="w-full max-w-xl max-h-[82vh] flex flex-col items-center justify-center gap-y-6">
             <FadeInSection direction="down" delay={0}>
@@ -383,7 +383,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* ── SECCIÓN 3: Buseta ─────────────────────────────────── */}
+        {/* SECCIÓN 3: Buseta */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           <div className="w-full max-w-2xl max-h-[85vh] flex flex-col items-center justify-center gap-y-4">
             <FadeInSection direction="down" delay={0}>
@@ -401,7 +401,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* ── SECCIÓN 4: Galería ─────────────────────────────────── */}
+        {/* SECCIÓN 4: Galería */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           {/* Glow más visible: dos radiales rosadas superpuestas */}
           <div
@@ -434,7 +434,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* ── SECCIÓN 5: Carta ──────────────────────────────────── */}
+        {/* SECCIÓN 5: Carta */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           {/* Textura de papel (fractal noise) */}
           <div
@@ -566,7 +566,7 @@ export default function App() {
           </FadeInSection>
         </section>
 
-        {/* ── SECCIÓN 6: Ruleta ─────────────────────────────────── */}
+        {/* SECCIÓN 6: Ruleta */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 text-center relative overflow-hidden">
           {/* Partículas ornamentales */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
@@ -608,7 +608,7 @@ export default function App() {
           className="w-full min-h-[64px] flex items-center justify-center text-center shrink-0 snap-start snap-always bg-[#130D0F]"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <p className="text-[8px] text-[#3C282D] tracking-widest uppercase font-mono font-light">
+          <p className="text-[8px] text-[#6E4752] tracking-widest uppercase font-mono font-light">
             © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
           </p>
         </footer>

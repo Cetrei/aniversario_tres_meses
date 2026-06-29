@@ -205,10 +205,10 @@ export const CONFIG: CoupleConfig = {
 
   rouletteSpinPhrases: [
     "Buscando nuestro próximo destino...",
-    "Consultando con el universo...",
-    "El destino está decidiendo...",
+    "Invocando 3 capybaras magicos...",
     "Preguntándole a las estrellas...",
-    "Eligiendo la aventura perfecta...",
+    "Eligiendo la aventura jaguar perfecta...",
+    "Los jaguares estan decidiendo..."
   ],
 
   sakuraTree: {
