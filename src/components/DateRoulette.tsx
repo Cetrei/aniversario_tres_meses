@@ -361,7 +361,7 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
             onClick={() => downloadCoupon(selected)}
             className="w-full sm:w-auto py-3.5 px-6 rounded-full font-sans font-light text-xs tracking-wide transition-all duration-300 border border-[#2D1C22] text-[#8C7565] hover:border-[#8C7565] hover:text-[#FFFDFD] flex items-center justify-center gap-2"
           >
-            Guardar boleto ilustrado
+            Guardar cupon
           </button>
         )}
       </div>

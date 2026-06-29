@@ -272,12 +272,12 @@ export const CONFIG: CoupleConfig = {
     {
       url: "/images/ComiendoEnLaPlaya.webp",
       displayName: "Comiendo en la playa",
-      caption: "Ese dia descubri que la arean y sal de mar sabe mejor en compañia y que el mar quiere mi culito🥀",
+      caption: "Ese dia descubri que la aarena y sal de mar sabe mejor en compañia y que el mar quiere mi culito🥀",
     },
     {
       url: "/images/CuandoNosDormimosRiquisimo.webp",
       displayName: "Dormidos riquísimo",
-      caption: "El sueño más dulce que he tenido con compañía, siendo atacado por hormigas, moscas y bajo la lluvia, de todas formas cai",
+      caption: "El sueño más dulce que he tenido con compañía, siendo atacado por hormigas, moscas y bajo la lluvia. Aun asi cai redondo",
     },
     {
       url: "/images/Cumplinedo20ConMamor.webp",
@@ -287,7 +287,7 @@ export const CONFIG: CoupleConfig = {
     {
       url: "/images/LaCitaEnElParque.webp",
       displayName: "La cita en el parque",
-      caption: "Mi favorita, me senti muy chineado y especiaal, me invitaste a comer cositas deliciosas que para otros podrian parecer simples, nunca lo olvidare",
+      caption: "Mi favorita, me senti muy chineado y especial, me invitaste a comer cositas deliciosas que para otros podrian parecer simples, nunca lo olvidare",
     },
     {
       url: "/images/LaGranPuta.webp",
@@ -429,7 +429,7 @@ export const CONFIG: CoupleConfig = {
   dateIdeas: [
     {
       title: "🦖 Cita de plastilina",
-      description: "Cada uno busca o decide unos animales/personames/lo que sea para hacer con plastilina y aambos hacemos nuestra version y les tomamos foto para el recuerdo",
+      description: "Cada uno busca o decide unos animales/personajes/lo que sea para hacer con plastilina y aambos hacemos nuestra version y les tomamos foto para el recuerdo",
     },
     {
       title: "🌅 Picnic en el aeropuerto al atardecer",

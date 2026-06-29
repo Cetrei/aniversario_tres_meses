@@ -374,7 +374,7 @@ export default function App() {
                 <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase block">Interactivo · Desliza</span>
                 <h2 className="text-xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">El Refugio de tu Risa</h2>
                 <p className="text-[#B59F9F] font-sans font-light text-xs sm:text-sm pt-2 max-w-md mx-auto">
-                  Mi cabeza suele ir a mil por hora. Pero he descubierto que tienes el poder de calmar el océano entero. Mira cómo encuentro paz en ti:
+                  Mi cabeza suele ir a mil por hora. Pero he descubierto que tienes el poder de calmar el océano entero. Arrastra hasta cada divisor y descubre cómo encuentro paz en ti:
                 </p>
               </div>
             </FadeInSection>
@@ -392,7 +392,7 @@ export default function App() {
                 <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase block">Interactivo · Toca a cada pasajero</span>
                 <h2 className="text-xl sm:text-3xl font-serif font-bold text-[#FFFDFD]">Nuestra Escapada Favorita</h2>
                 <p className="text-[#B59F9F] font-sans font-light text-xs sm:text-sm pt-2 max-w-lg mx-auto">
-                  No necesitamos un destino lujoso. Nuestro viaje ideal es al fondo de una buseta, compartiendo música y planeando el futuro con nuestra familia de animales.
+                  Tal vez fue bromeando, pero me encanto la idea de la buseta, despues de todo no necesitamos un destino lujoso si estamos juntos
                 </p>
               </div>
             </FadeInSection>
