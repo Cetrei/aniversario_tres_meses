@@ -194,7 +194,7 @@ export interface CoupleConfig {
 }
 
 export const CONFIG: CoupleConfig = {
-  githubRepoUrl: "https://github.com/Cetrei/tercer_aniversario_-3",
+  githubRepoUrl: "https://github.com/Cetrei/aniversario_tres_meses",
 
   timing: {
     // Duración de la transición de salida de la intro en ms
