@@ -591,20 +591,19 @@ export const CONFIG: CoupleConfig = {
   easterEgg: {
     enabled: true,
     // Secuencia de 3 pasos:
-    // Paso 1: Primer J (Joanfer) → 3/5 → 3 grados, 5 segundos
-    // Paso 2: Segunda J (Jimena) → 27/2 → 27 grados, 2 segundos  
-    // Paso 3: Ambas J al revés (locos) → 270 grados → desbloqueo
     sealSteps: [
-      { targetAngle: 5, holdSeconds: 5, toleranceDeg: 1, hintText: "El primero llegó el 3 del 5..." },
-      { targetAngle: 27, holdSeconds: 2, toleranceDeg: 5, hintText: "La segunda el 27 del 2..." },
-      { targetAngle: 180, holdSeconds: 2, toleranceDeg: 5, hintText: "Ahora al revés, como loquitos 🙃" },
+      { targetAngle: 27, holdSeconds: 2, toleranceDeg: 4, hintText: "La primera llegó el 27 del 2..." },
+      { targetAngle: 3, holdSeconds: 5, toleranceDeg: 4, hintText: "El segundo llegó el 3 del 5..." },
+      { targetAngle: 180, holdSeconds: 2, toleranceDeg: 4, hintText: "Ahora al revés, como loquitos 🙃" },
     ],
     hintText: "Hay un secreto que gira, no todo es lo que parece 🔎",
-    surpriseTitle: "Encontraste el secreto",
+    surpriseTitle: "Tu premio: el secreto que somos nosotros",
     surpriseMessage: [
-      "Sabía que tarde o temprano lo ibas a encontrar, eres demasiado curiosa y observadora para dejarlo pasar.",
-      "Este es un pequeño extra que quise dejar escondido solo para ti, como un secreto que solo nosotros dos compartimos.",
-      "Aprovecho para decirte, hice esta pagina con mucho amor con el fin de que la tengas de por vida, ire actualizando la inea del tiempo, el arbol crecera y nosotros nos amaremos cada dia más."
+      "Sabía que tarde o temprano ibas a romper este código. Eres demasiado curiosa, inteligente y observadora para dejarlo sin resolver. Llegar hasta aquí no fue cualquier cosa, así que bienvenida a tu premio: el secreto más profundo que guardo sobre nosotros dos.",
+      "El sello no empieza el día que aceptaste ser mi novia. Empieza el 27 de febrero y el 3 de mayo, los días en que tú y yo nacimos. Porque para mí, nuestra historia no comenzó cuando dijiste que sí, sino mucho antes: el día en que cada uno llegó a este mundo a esperar, sin saberlo, encontrarse con el otro. Creo de verdad que somos almas gemelas, y que el amor de mi vida ya existía mucho antes de conocerla.",
+      "¿Notaste que las dos primeras J están de cabeza? No es un error. Somos un par de loquitos sanando, creciendo y aprendiendo juntos, a veces patas arriba, casi siempre en caos... pero en ese caos, nos entendemos como nadie más lo hace. Ante la adversidad nos tenemos el uno al otro, y eso, para mí, lo vuelve todo más fácil.",
+      "Quiero construir un futuro contigo. Quiero vivir toda mi vida a tu lado, decirte cuánto te amo cada mañana, besarte, cuidarte, atesorarte, respetarte y hacerte sentir tan especial como en verdad lo eres. No me importa el resto del mundo: solo tú. Cuando intento imaginar una vida sin ti, simplemente no veo nada. Y si tener que ser el villano de la historia fuera lo que hace falta para tenerte a mi lado, lo sería sin pensarlo dos veces.",
+      "Soy creyente, y eso me da una paz enorme, porque si el destino de alguien tan maravillosa como tú fuera la nada, este universo sería un lugar miserable. Por eso también quiero que creas: no te pido que seas católica ni nada parecido, pero si alguna vez te da curiosidad, preguntáme y te cuento cómo lo veo yo. Tal vez me creas, tal vez no, pero nos conviene que haya una vida después de esta, para poder estar juntos por siempre.",
     ],
     surpriseImage: "/images/secreto.webp",
   },
@@ -613,15 +612,15 @@ export const CONFIG: CoupleConfig = {
   // Cada una apunta sutilmente a las fechas de cumpleaños o al acertijo
   hiddenHints: [
     // Hero - coordenadas sutiles
-    { id: "hero-1", text: "3° al norte, 5 minutos de espera", location: "hero", style: "coords" },
+    { id: "hero-1", text: "27° al norte, 2 minutos de espera", location: "hero", style: "coords" },
      // Árbol - acróstico con las fechas
     //{ id: "tree-1", text: "Vemos como todo florece en .Febrero. hasta que llega .Abril.", location: "tree", style: "acrostic" },
     // Smile slider - símbolos
-    { id: "smile-1", text: "↻ 5s · ↻ 2s · ↻ 2s: °? · °? · °?", location: "smile", style: "symbol" },
+    { id: "smile-1", text: "↻ 2s · ↻ 5s · ↻ 2s: °? · °? · °?", location: "smile", style: "symbol" },
     // Buseta - micro texto
     { id: "buseta-1", text: "Una familia patas arriba ↻", location: "buseta", style: "micro" },
     // Galería - coordenadas en caption-like
-    { id: "gallery-1", text: "Nuestro amor florece en .Febrero. y resplandece en .Abril.", location: "gallery", style: "subtle" },
+    { id: "gallery-1", text: "Nuestro amor florece en .Marzo. y resplandece en .Agosto.", location: "gallery", style: "subtle" },
     // Carta - acróstico visible
     { id: "letter-1", text: "Juntos siempre, mi amor. Incluso al revés.", location: "letter", style: "acrostic" },
     // Ruleta - símbolos de ángulos

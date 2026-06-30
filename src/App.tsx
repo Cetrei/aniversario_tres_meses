@@ -266,7 +266,7 @@ function GalleryPetals() {
   );
 }
 
-// ============ UTILIDAD DE SONIDO ============
+// UTILIDAD DE SONIDO
 function playTone(freq: number, duration: number, type: OscillatorType = 'sine', volume: number = 0.3) {
   try {
     const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
@@ -431,6 +431,7 @@ function LetterSeal({ cfg, unlocked, onUnlock, onDiscover }: { cfg: typeof CONFI
 
   const startDrag = () => { 
     if (!hasInteracted) {
+      playTone(740, 0.18, 'sine', 0.1);
       setHasInteracted(true);
       onDiscover();
     }
@@ -536,7 +537,7 @@ function LetterSeal({ cfg, unlocked, onUnlock, onDiscover }: { cfg: typeof CONFI
       {hasInteracted && !unlockedRef.current && currentStep < steps.length && (
         <p className="text-[7px] font-mono tracking-widest text-[#62464D]/60 mt-2 uppercase">
           {currentStep === 0 && "En veces volver al inicio y recrear nuestros pasos es la clave"}
-          {currentStep === 1 && "¿Recuerdas cuándo todo floreció?"}
+          {currentStep === 1 && "¿Cuando floreció todo y cuanto pasa hasta que resplandece?"}
           {currentStep === 2 && "Nuestra futura familia de locos pueden saber algo"}
         </p>
       )}
@@ -969,7 +970,7 @@ function downloadLetter(cfg: typeof CONFIG, secretUnlocked: boolean) {
 
   const headerLines = 7;
   const footerLines = 3;
-  const sealPad = cfg.decorations.letterSeal ? (secretUnlocked ? lineH * 8.5 : lineH * 4) : 0;
+  const sealPad = cfg.decorations.letterSeal ? (secretUnlocked ? lineH * 11 : lineH * 4) : 0;
   const H = (headerLines + wrappedBody.length + footerLines + 3) * lineH + 96 + sealPad;
   const canvasH = Math.max(H, 480);
 
@@ -1152,6 +1153,15 @@ function downloadLetter(cfg: typeof CONFIG, secretUnlocked: boolean) {
         ctx.textAlign = 'center';
         ctx.fillText('Tres giros que sellaron nuestra historia', cx, y);
         ctx.restore();
+
+        y += lineH * 1.15;
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.font = '9px monospace';
+        ctx.fillStyle = '#B59F9F';
+        ctx.textAlign = 'center';
+        ctx.fillText('Juntos por siempre, mi amor. Incluso al revés.', cx, y);
+        ctx.restore();
       }
     }
 
@@ -1217,7 +1227,7 @@ function SecretPage({ cfg, onReturn }: { cfg: typeof CONFIG; onReturn: () => voi
       <div className="absolute inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse 55% 45% at 50% 40%, rgba(232,165,152,0.10) 0%, transparent 70%)',
       }} />
-      <div className="relative z-10 flex flex-col items-center text-center max-w-md gap-6">
+      <div className="relative z-10 flex flex-col items-center text-center w-full max-w-lg gap-6">
         <div className="opacity-60">
           <svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true">
             <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
@@ -1228,21 +1238,39 @@ function SecretPage({ cfg, onReturn }: { cfg: typeof CONFIG; onReturn: () => voi
           </svg>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-serif font-light text-[#FFFDFD] tracking-tight leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-serif font-light text-[#FFFDFD] tracking-tight leading-tight px-4">
           {cfg.easterEgg.surpriseTitle}
         </h1>
 
-        {cfg.easterEgg.surpriseImage && (
-          <img src={cfg.easterEgg.surpriseImage} alt="Sorpresa especial"
-            className="max-w-xs w-full max-h-[42vh] sm:max-h-[48vh] object-contain rounded-xl border border-[#4E313C]/30 shadow-2xl shadow-black/50" />
-        )}
+        {/* Carta dentro de la carta */}
+        <div className="relative w-full rounded-2xl px-6 sm:px-9 pt-9 pb-7 shadow-2xl shadow-black/60"
+          style={{
+            background: 'linear-gradient(145deg, rgba(28,18,22,0.97) 0%, rgba(22,14,18,0.99) 100%)',
+            border: '1px solid rgba(232,165,152,0.25)',
+          }}>
+          {/* Mini sello superior, como si la carta estuviera lacrada */}
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full border flex items-center justify-center bg-[#0A0608]"
+            style={{ borderColor: 'rgba(232,165,152,0.55)', boxShadow: '0 0 14px rgba(232,165,152,0.25)' }}>
+            <span className="text-[8px] font-mono tracking-widest text-[#E8A598]">J&J</span>
+          </div>
 
-        <div className="space-y-3 text-[#C9BFB8] font-serif text-sm leading-relaxed font-light">
-          {cfg.easterEgg.surpriseMessage.map((paragraph, i) => (<p key={i}>{paragraph}</p>))}
+          {cfg.easterEgg.surpriseImage && (
+            <img src={cfg.easterEgg.surpriseImage} alt="Sorpresa especial"
+              className="mx-auto mb-5 w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border border-[#E8A598]/30 shadow-lg shadow-black/40" />
+          )}
+
+          <div className="space-y-4 text-[#C9BFB8] font-serif text-[13px] sm:text-sm leading-relaxed font-light text-left max-h-[46vh] overflow-y-auto pr-2 letter-scrollbar">
+            {cfg.easterEgg.surpriseMessage.map((paragraph, i) => (<p key={i}>{paragraph}</p>))}
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-[#4E313C]/30 flex items-center justify-between gap-4">
+            <p className="font-serif text-xs text-[#8C7565] italic">Con todo mi amor,</p>
+            <p className="font-serif text-base text-[#E8A598] font-semibold">{cfg.names.from}</p>
+          </div>
         </div>
 
         <button type="button" onClick={handleReturn}
-          className="mt-2 px-8 py-3 rounded-full bg-[#E8A598]/10 border border-[#E8A598]/30 text-[#E8A598] font-serif text-sm tracking-wide hover:bg-[#E8A598]/20 hover:border-[#E8A598]/50 transition-all duration-300 flex items-center gap-2">
+          className="mt-1 px-8 py-3 rounded-full bg-[#E8A598]/10 border border-[#E8A598]/30 text-[#E8A598] font-serif text-sm tracking-wide hover:bg-[#E8A598]/20 hover:border-[#E8A598]/50 transition-all duration-300 flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
           Volver a la carta
         </button>
@@ -1264,22 +1292,27 @@ function SecretAccessButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function SecretUnlockedToast({ visible }: { visible: boolean }) {
+function SecretUnlockedToast({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   return (
     <div
-      className="fixed bottom-16 left-4 z-50 max-w-[250px] pointer-events-none"
+      className="fixed bottom-16 left-4 z-50 max-w-[260px]"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(8px)',
-        transition: 'opacity 700ms cubic-bezier(0.4,0,0.2,1), transform 700ms cubic-bezier(0.4,0,0.2,1)',
+        transition: 'opacity 500ms cubic-bezier(0.4,0,0.2,1), transform 500ms cubic-bezier(0.4,0,0.2,1)',
+        pointerEvents: visible ? 'auto' : 'none',
       }}
     >
-      <div className="px-4 py-3 rounded-2xl bg-[#1C1216]/60 border border-[#E8A598]/20 backdrop-blur-md shadow-xl shadow-black/30">
+      <div className="relative px-4 py-3 pr-7 rounded-2xl bg-[#1C1216]/70 border border-[#E8A598]/20 backdrop-blur-md shadow-xl shadow-black/30">
+        <button type="button" onClick={onClose} aria-label="Cerrar aviso"
+          className="absolute top-2 right-2 w-4 h-4 flex items-center justify-center text-[#B59F9F]/60 hover:text-[#E8A598] transition-colors duration-200">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        </button>
         <p className="text-[10px] font-serif italic text-[#E8A598]/90 leading-snug">
           Tu secreto te espera aquí abajo, siempre que quieras volver a él.
         </p>
         <p className="text-[8px] font-mono text-[#B59F9F]/70 tracking-wide mt-1.5 leading-snug uppercase">
-          Y si guardas la carta, llevará un nuevo sello ✨
+          Y si guardas la carta, llevará un nuevo sello 💘
         </p>
       </div>
     </div>
@@ -1327,9 +1360,12 @@ export default function App() {
     setSecretNoticeShown((already) => {
       if (already) return already;
       setSecretNoticeVisible(true);
-      setTimeout(() => setSecretNoticeVisible(false), 6000);
       return true;
     });
+  }, []);
+
+  const handleCloseSecretNotice = useCallback(() => {
+    setSecretNoticeVisible(false);
   }, []);
 
   const monthsElapsed = getMonthsElapsed(CONFIG.anniversaryDate);
@@ -1409,7 +1445,7 @@ export default function App() {
         <AmbientLights />
         <BackgroundMusicPlayer audioRef={musicAudioRef} isPlaying={musicPlaying} onToggle={handleMusicToggle} />
         {secretUnlocked && <SecretAccessButton onClick={navigateToSecret} />}
-        {secretNoticeShown && <SecretUnlockedToast visible={secretNoticeVisible} />}
+        {secretNoticeShown && <SecretUnlockedToast visible={secretNoticeVisible} onClose={handleCloseSecretNotice} />}
         <SideDecoration side="left" />
         <SideDecoration side="right" />
 
