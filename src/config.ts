@@ -586,6 +586,7 @@ export const CONFIG: CoupleConfig = {
     volume: 0.05,
     autoplay: true,
   },
+  
 
   easterEgg: {
     enabled: true,
