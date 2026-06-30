@@ -305,16 +305,16 @@ function playUnlockSound() {
   setTimeout(() => playTone(1319, 0.8, 'sine', 0.2), 500);
 }
 
-function LetterSeal({ cfg, onUnlock, onDiscover }: { cfg: typeof CONFIG; onUnlock: () => void; onDiscover: () => void }) {
+function LetterSeal({ cfg, unlocked, onUnlock, onDiscover }: { cfg: typeof CONFIG; unlocked: boolean; onUnlock: () => void; onDiscover: () => void }) {
   const [angle, setAngle] = useState(0);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(unlocked ? cfg.easterEgg.sealSteps.length : 0);
   const [stepProgress, setStepProgress] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [completedSteps, setCompletedSteps] = useState<number[]>(unlocked ? cfg.easterEgg.sealSteps.map((_, i) => i) : []);
   const [showHint, setShowHint] = useState<string | null>(null);
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(unlocked);
   const draggingRef = useRef(false);
   const sealRef = useRef<HTMLDivElement | null>(null);
-  const unlockedRef = useRef(false);
+  const unlockedRef = useRef(unlocked);
   const holdStartRef = useRef<number | null>(null);
   const delayStartRef = useRef<number | null>(null);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -542,11 +542,9 @@ function LetterSeal({ cfg, onUnlock, onDiscover }: { cfg: typeof CONFIG; onUnloc
       )}
       
       {unlockedRef.current && (
-        setTimeout(() => {
-          <p className="text-[8px] font-mono tracking-widest text-[#E8A598] mt-2 uppercase animate-pulse">
-            ✨ Secreto desbloqueado ✨
-          </p>
-        }, 2500)
+        <p className="text-[8px] font-mono tracking-widest text-[#E8A598] mt-2 uppercase animate-pulse">
+          ✨ Secreto desbloqueado ✨
+        </p>
       )}
     </div>
   );
@@ -942,7 +940,7 @@ function NextMilestoneSection({ anniversaryDate }: { anniversaryDate: string }) 
   );
 }
 
-function downloadLetter(cfg: typeof CONFIG) {
+function downloadLetter(cfg: typeof CONFIG, secretUnlocked: boolean) {
   const lc = cfg.loveLetter;
   const W = 700;
   const lineH = 22;
@@ -971,7 +969,7 @@ function downloadLetter(cfg: typeof CONFIG) {
 
   const headerLines = 7;
   const footerLines = 3;
-  const sealPad = cfg.decorations.letterSeal ? lineH * 4 : 0;
+  const sealPad = cfg.decorations.letterSeal ? (secretUnlocked ? lineH * 8.5 : lineH * 4) : 0;
   const H = (headerLines + wrappedBody.length + footerLines + 3) * lineH + 96 + sealPad;
   const canvasH = Math.max(H, 480);
 
@@ -1101,21 +1099,60 @@ function downloadLetter(cfg: typeof CONFIG) {
 
     if (cfg.decorations.letterSeal) {
       y += lineH * 1.8;
+
+      if (secretUnlocked) {
+        const miniR = 9;
+        const miniGap = 30;
+        const miniColors = ['#E8A598', '#B39DDB', '#FFFDFD'];
+        const miniLabels = ['J₁', 'J₂', 'J&J'];
+        const miniY = y + miniR;
+        const startX = cx - miniGap;
+        miniLabels.forEach((label, i) => {
+          const mx = startX + i * miniGap;
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.strokeStyle = miniColors[i];
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(mx, miniY, miniR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 0.9;
+          ctx.font = '7px monospace';
+          ctx.fillStyle = miniColors[i];
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, mx, miniY);
+          ctx.restore();
+        });
+        y += miniR * 2 + lineH * 1.1;
+      }
+
       const sealR = 16;
       ctx.save();
       ctx.globalAlpha = 0.70;
-      ctx.strokeStyle = 'rgb(100,54,71)';
+      ctx.strokeStyle = secretUnlocked ? 'rgba(232,165,152,0.75)' : 'rgb(100,54,71)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(cx, y + sealR, sealR, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 0.60;
       ctx.font = '8px monospace';
-      ctx.fillStyle = 'rgb(180,160,165)';
+      ctx.fillStyle = secretUnlocked ? 'rgb(232,165,152)' : 'rgb(180,160,165)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('J & J', cx, y + sealR);
       ctx.restore();
+
+      if (secretUnlocked) {
+        y += sealR * 2 + lineH * 1.0;
+        ctx.save();
+        ctx.globalAlpha = 0.8;
+        ctx.font = 'italic 11px serif';
+        ctx.fillStyle = '#E8A598';
+        ctx.textAlign = 'center';
+        ctx.fillText('Tres giros que sellaron nuestra historia', cx, y);
+        ctx.restore();
+      }
     }
 
     const link = document.createElement('a');
@@ -1196,7 +1233,7 @@ function SecretPage({ cfg }: { cfg: typeof CONFIG }) {
 
         {cfg.easterEgg.surpriseImage && (
           <img src={cfg.easterEgg.surpriseImage} alt="Sorpresa especial"
-            className="max-w-xs w-full rounded-xl border border-[#4E313C]/30 shadow-2xl shadow-black/50" />
+            className="max-w-xs w-full max-h-[42vh] sm:max-h-[48vh] object-contain rounded-xl border border-[#4E313C]/30 shadow-2xl shadow-black/50" />
         )}
 
         <div className="space-y-3 text-[#C9BFB8] font-serif text-sm leading-relaxed font-light">
@@ -1213,6 +1250,19 @@ function SecretPage({ cfg }: { cfg: typeof CONFIG }) {
   );
 }
 
+function SecretAccessButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} aria-label="Ver el secreto"
+      className="fixed bottom-4 left-16 z-50 flex items-center gap-1.5 px-3 h-9 rounded-full bg-[#E8A598]/10 border border-[#E8A598]/30 text-[#E8A598] text-[10px] font-mono tracking-wider hover:bg-[#E8A598]/20 hover:border-[#E8A598]/50 transition-all duration-300 backdrop-blur-sm">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      Secreto
+    </button>
+  );
+}
+
 export default function App() {
   const [hasStarted, setHasStarted] = useState(false);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -1226,6 +1276,7 @@ export default function App() {
   const dockAnchorRef = useRef<HTMLParagraphElement>(null);
   const isSecretRoute = useIsSecretRoute();
   const [hintsDiscovered, setHintsDiscovered] = useState(false);
+  const [secretUnlocked, setSecretUnlocked] = useState(false);
 
   const handleStart = useCallback(() => {
     if (CONFIG.backgroundMusic.enabled && CONFIG.backgroundMusic.src && musicAudioRef.current) {
@@ -1242,6 +1293,7 @@ export default function App() {
       audio.pause();
       setMusicPlaying(false);
     } else {
+      audio.volume = CONFIG.backgroundMusic.volume;
       audio.play().then(() => setMusicPlaying(true)).catch(() => {});
     }
   }, [musicPlaying]);
@@ -1280,10 +1332,6 @@ export default function App() {
     return <WaitingScreen startDate={CONFIG.anniversaryDate} />;
   }
 
-  if (isSecretRoute) {
-    return <SecretPage cfg={CONFIG} />;
-  }
-
   const scrollBlocked = !introComplete || !!(greetingText && !greetingDocked);
 
   return (
@@ -1292,7 +1340,9 @@ export default function App() {
         <audio ref={musicAudioRef} src={CONFIG.backgroundMusic.src} loop preload="auto"
           onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} />
       )}
-      {!hasStarted ? <StartScreen onStart={handleStart} /> : (<>
+      {isSecretRoute ? (
+        <SecretPage cfg={CONFIG} />
+      ) : !hasStarted ? <StartScreen onStart={handleStart} /> : (<>
       {scrollBlocked && (
         <div 
           className="fixed inset-0 z-[60]"
@@ -1324,6 +1374,7 @@ export default function App() {
         }}>
         <AmbientLights />
         <BackgroundMusicPlayer audioRef={musicAudioRef} isPlaying={musicPlaying} onToggle={handleMusicToggle} />
+        {secretUnlocked && <SecretAccessButton onClick={navigateToSecret} />}
         <SideDecoration side="left" />
         <SideDecoration side="right" />
 
@@ -1647,7 +1698,7 @@ export default function App() {
               </div>
               
               {CONFIG.decorations.letterSeal && (
-                <LetterSeal cfg={CONFIG} onUnlock={() => navigateToSecret()} onDiscover={() => setHintsDiscovered(true)} />
+                <LetterSeal cfg={CONFIG} unlocked={secretUnlocked} onUnlock={() => { setSecretUnlocked(true); navigateToSecret(); }} onDiscover={() => setHintsDiscovered(true)} />
               )}
             </div>
           </FadeInSection>

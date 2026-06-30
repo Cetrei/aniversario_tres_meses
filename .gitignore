@@ -4,5 +4,6 @@
 /.venv/
 /.wrangler/
 /.dev/
+/ public/
 
 AGENT.md
