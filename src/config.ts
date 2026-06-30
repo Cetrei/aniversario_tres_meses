@@ -350,7 +350,7 @@ export const CONFIG: CoupleConfig = {
     to: "Mamor 💗",
   },
 
-  anniversaryDate: "2020-03-01T00:00:00",
+  anniversaryDate: "2026-04-01T00:00:00",
 
 "loveLetter": {
     "place": "San José, 28 de junio de 2026",
@@ -583,8 +583,8 @@ export const CONFIG: CoupleConfig = {
   backgroundMusic: {
     enabled: true,
     src: "/audio/musica.mp3",
-    volume: 0.35,
-    autoplay: false,
+    volume: 0.05,
+    autoplay: true,
   },
 
   easterEgg: {
