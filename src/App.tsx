@@ -815,12 +815,12 @@ function BackgroundMusicPlayer({ cfg }: { cfg: typeof CONFIG }) {
   }, [cfg.backgroundMusic.volume]);
 
   useEffect(() => {
-    if (!true || triedAutoplay) return;
+    if (!cfg.backgroundMusic.autoplay || triedAutoplay) return;
     setTriedAutoplay(true);
     const audio = audioRef.current;
     if (!audio) return;
     audio.play().then(() => setIsPlaying(true)).catch(() => {});
-  }, [true, triedAutoplay]);
+  }, [cfg.backgroundMusic.autoplay, triedAutoplay]);
 
   const toggle = () => {
     const audio = audioRef.current;
