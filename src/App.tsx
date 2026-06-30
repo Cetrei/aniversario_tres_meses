@@ -1195,9 +1195,10 @@ function useIsSecretRoute(): boolean {
 
 // ============ PÁGINA SECRETA ============
 // Ahora regresa a la sección de la carta en lugar de solo limpiar el hash
-function SecretPage({ cfg }: { cfg: typeof CONFIG }) {
+function SecretPage({ cfg, onReturn }: { cfg: typeof CONFIG; onReturn: () => void }) {
   const handleReturn = () => {
     navigateHome();
+    onReturn();
     // Scroll a la sección de la carta después de que el hash se limpie
     setTimeout(() => {
       const letterSection = document.getElementById('letter-section');
@@ -1263,6 +1264,28 @@ function SecretAccessButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+function SecretUnlockedToast({ visible }: { visible: boolean }) {
+  return (
+    <div
+      className="fixed bottom-16 left-4 z-50 max-w-[250px] pointer-events-none"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity 700ms cubic-bezier(0.4,0,0.2,1), transform 700ms cubic-bezier(0.4,0,0.2,1)',
+      }}
+    >
+      <div className="px-4 py-3 rounded-2xl bg-[#1C1216]/60 border border-[#E8A598]/20 backdrop-blur-md shadow-xl shadow-black/30">
+        <p className="text-[10px] font-serif italic text-[#E8A598]/90 leading-snug">
+          Tu secreto te espera aquí abajo, siempre que quieras volver a él.
+        </p>
+        <p className="text-[8px] font-mono text-[#B59F9F]/70 tracking-wide mt-1.5 leading-snug uppercase">
+          Y si guardas la carta, llevará un nuevo sello ✨
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [hasStarted, setHasStarted] = useState(false);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -1277,6 +1300,8 @@ export default function App() {
   const isSecretRoute = useIsSecretRoute();
   const [hintsDiscovered, setHintsDiscovered] = useState(false);
   const [secretUnlocked, setSecretUnlocked] = useState(false);
+  const [secretNoticeShown, setSecretNoticeShown] = useState(false);
+  const [secretNoticeVisible, setSecretNoticeVisible] = useState(false);
 
   const handleStart = useCallback(() => {
     if (CONFIG.backgroundMusic.enabled && CONFIG.backgroundMusic.src && musicAudioRef.current) {
@@ -1297,6 +1322,15 @@ export default function App() {
       audio.play().then(() => setMusicPlaying(true)).catch(() => {});
     }
   }, [musicPlaying]);
+
+  const handleSecretReturn = useCallback(() => {
+    setSecretNoticeShown((already) => {
+      if (already) return already;
+      setSecretNoticeVisible(true);
+      setTimeout(() => setSecretNoticeVisible(false), 6000);
+      return true;
+    });
+  }, []);
 
   const monthsElapsed = getMonthsElapsed(CONFIG.anniversaryDate);
   const hasReached3Months = monthsElapsed >= 3;
@@ -1341,7 +1375,7 @@ export default function App() {
           onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} />
       )}
       {isSecretRoute ? (
-        <SecretPage cfg={CONFIG} />
+        <SecretPage cfg={CONFIG} onReturn={handleSecretReturn} />
       ) : !hasStarted ? <StartScreen onStart={handleStart} /> : (<>
       {scrollBlocked && (
         <div 
@@ -1375,6 +1409,7 @@ export default function App() {
         <AmbientLights />
         <BackgroundMusicPlayer audioRef={musicAudioRef} isPlaying={musicPlaying} onToggle={handleMusicToggle} />
         {secretUnlocked && <SecretAccessButton onClick={navigateToSecret} />}
+        {secretNoticeShown && <SecretUnlockedToast visible={secretNoticeVisible} />}
         <SideDecoration side="left" />
         <SideDecoration side="right" />
 
@@ -1626,7 +1661,7 @@ export default function App() {
                 background: 'linear-gradient(145deg, rgba(28,18,22,0.97) 0%, rgba(22,14,18,0.99) 100%)',
                 border: '1px solid rgba(78,49,60,0.35)',
               }}>
-              <button type="button" onClick={() => downloadLetter(CONFIG)} aria-label="Guardar carta como imagen"
+              <button type="button" onClick={() => downloadLetter(CONFIG, secretUnlocked)} aria-label="Guardar carta como imagen"
                 className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full flex items-center justify-center text-[#8C7565] border border-[#4E313C]/40 bg-[#130D0F]/50 hover:text-[#E8A598] hover:border-[#E8A598]/40 hover:bg-[#E8A598]/08 transition-all duration-300 backdrop-blur-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
