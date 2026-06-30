@@ -1,0 +1,7 @@
+Si en el futuro decides usar una ruta real (ej. /secreto) en vez del hash (#secreto) que usa este proyecto,
+necesitas agregar un archivo `_redirects` aquí con el contenido:
+
+/*    /index.html   200
+
+Esto le dice a Cloudflare Pages que sirva index.html para cualquier ruta,
+dejando que React maneje la navegación del lado del cliente (patrón SPA).

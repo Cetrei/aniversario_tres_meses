@@ -52,6 +52,50 @@ function getTimeUntil3Months(startDate: string): { days: number; hours: number; 
   return { days, hours, minutes, seconds, totalMs: diff, hasReached: false };
 }
 
+// Calcula cuántos días faltan para el próximo mes/año cumplido de relación
+function getNextMilestone(startDate: string): { daysLeft: number; nextLabel: string } {
+  const start = new Date(startDate);
+  const now = new Date();
+  const monthsElapsed = getMonthsElapsed(startDate);
+  const nextMonths = monthsElapsed + 1;
+
+  const nextDate = new Date(start);
+  nextDate.setMonth(nextDate.getMonth() + nextMonths);
+
+  const diffMs = nextDate.getTime() - now.getTime();
+  const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+  let nextLabel: string;
+  if (nextMonths < 12) {
+    nextLabel = `${nextMonths} ${nextMonths === 1 ? 'mes' : 'meses'}`;
+  } else {
+    const years = Math.floor(nextMonths / 12);
+    const rem = nextMonths % 12;
+    if (rem === 0) {
+      nextLabel = `${years} ${years === 1 ? 'año' : 'años'}`;
+    } else {
+      nextLabel = `${years} ${years === 1 ? 'año' : 'años'} y ${rem} ${rem === 1 ? 'mes' : 'meses'}`;
+    }
+  }
+
+  return { daysLeft, nextLabel };
+}
+
+// Saludo según la hora del día, configurable desde config.ts
+function getTimeOfDayGreeting(cfg: typeof CONFIG): string | null {
+  if (!cfg.greetings.enabled) return null;
+  const hour = new Date().getHours();
+  let template: string;
+  if (hour >= 5 && hour < 12) {
+    template = cfg.greetings.morning;
+  } else if (hour >= 12 && hour < 19) {
+    template = cfg.greetings.afternoon;
+  } else {
+    template = cfg.greetings.night;
+  }
+  return template.replace('{name}', cfg.names.to);
+}
+
 function WaitingScreen({ startDate }: { startDate: string }) {
   const [timeLeft, setTimeLeft] = useState(() => getTimeUntil3Months(startDate));
   const [showReloadPrompt, setShowReloadPrompt] = useState(false);
@@ -140,7 +184,7 @@ function CoverTimeline({ milestones }: { milestones: { date: string; label: stri
   const totalSpan = Date.now() - firstMs;
 
   return (
-    <div className="hidden lg:flex flex-col items-center absolute right-[-120] xl:right-[-150px] top-1/2 -translate-y-1/2 h-[70%] max-h-[360px] w-[80px]">
+    <div className="hidden lg:flex flex-col items-center absolute right-[-120px] xl:right-[-150px] top-1/2 -translate-y-1/2 h-[70%] max-h-[360px] w-[80px]">
       <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-[#4E313C]/25 to-transparent" />
       {milestones.map((m, i) => {
         const mDate = new Date(m.date);
@@ -264,12 +308,79 @@ function GalleryPetals() {
   );
 }
 
-// Sello circular
-function LetterSeal() {
+// Sello circular interactivo (easter egg): se puede girar arrastrando.
+// Al soltarlo cerca del ángulo objetivo configurado en config.ts, revela una sorpresa.
+function LetterSeal({ cfg, onUnlock }: { cfg: typeof CONFIG; onUnlock: () => void }) {
+  const [angle, setAngle] = useState(0);
+  const draggingRef = useRef(false);
+  const sealRef = useRef<HTMLDivElement | null>(null);
+  const unlockedRef = useRef(false);
+
+  const angleFromPointer = useCallback((clientX: number, clientY: number) => {
+    const el = sealRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const rad = Math.atan2(clientY - cy, clientX - cx);
+    let deg = (rad * 180) / Math.PI + 90;
+    if (deg < 0) deg += 360;
+    return deg;
+  }, []);
+
+  const checkUnlock = useCallback((current: number) => {
+    if (!cfg.easterEgg.enabled || unlockedRef.current) return;
+    const target = ((cfg.easterEgg.targetAngle % 360) + 360) % 360;
+    const tolerance = cfg.easterEgg.toleranceDeg;
+    let diff = Math.abs(current - target);
+    if (diff > 180) diff = 360 - diff;
+    if (diff <= tolerance) {
+      unlockedRef.current = true;
+      onUnlock();
+    }
+  }, [cfg.easterEgg.enabled, cfg.easterEgg.targetAngle, cfg.easterEgg.toleranceDeg, onUnlock]);
+
+  const handleMove = useCallback((clientX: number, clientY: number) => {
+    if (!draggingRef.current) return;
+    const deg = angleFromPointer(clientX, clientY);
+    setAngle(deg);
+    checkUnlock(deg);
+  }, [angleFromPointer, checkUnlock]);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) handleMove(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    const stopDrag = () => { draggingRef.current = false; };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('mouseup', stopDrag);
+    window.addEventListener('touchend', stopDrag);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('mouseup', stopDrag);
+      window.removeEventListener('touchend', stopDrag);
+    };
+  }, [handleMove]);
+
+  const startDrag = () => { draggingRef.current = true; };
+
   return (
     <div className="flex flex-col items-center mt-5">
-      <div className="w-10 h-10 rounded-full border flex items-center justify-center"
-        style={{ borderColor: 'rgb(100, 54, 71)', opacity: 0.7 }}>
+      <div
+        ref={sealRef}
+        onMouseDown={startDrag}
+        onTouchStart={startDrag}
+        className="w-10 h-10 rounded-full border flex items-center justify-center select-none"
+        style={{
+          borderColor: 'rgb(100, 54, 71)',
+          opacity: 0.7,
+          transform: `rotate(${angle}deg)`,
+          cursor: cfg.easterEgg.enabled ? 'grab' : 'default',
+          touchAction: 'none',
+        }}>
         <span className="text-[9px] font-mono tracking-widest" style={{ color: 'rgb(122, 108, 113)' }}>J & J</span>
       </div>
     </div>
@@ -457,6 +568,61 @@ function AmbientLights() {
         style={{ background: 'radial-gradient(circle, rgba(59,31,39,0.22) 0%, transparent 70%)' }} />
       <div className="fixed top-[45%] left-[-18%] w-[55vw] h-[55vw] rounded-full pointer-events-none z-0 ambient-blob-2"
         style={{ background: 'radial-gradient(circle, rgba(232,165,152,0.09) 0%, transparent 70%)' }} />
+    </>
+  );
+}
+
+// Botón flotante para controlar la música de fondo en loop
+function BackgroundMusicPlayer({ cfg }: { cfg: typeof CONFIG }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [triedAutoplay, setTriedAutoplay] = useState(false);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = cfg.backgroundMusic.volume;
+    }
+  }, [cfg.backgroundMusic.volume]);
+
+  useEffect(() => {
+    if (!cfg.backgroundMusic.autoplay || triedAutoplay) return;
+    setTriedAutoplay(true);
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.play().then(() => setIsPlaying(true)).catch(() => {
+      // El navegador bloqueó el autoplay sin interacción previa; el botón queda disponible manualmente.
+    });
+  }, [cfg.backgroundMusic.autoplay, triedAutoplay]);
+
+  const toggle = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+    } else {
+      audio.play().then(() => setIsPlaying(true)).catch(() => {});
+    }
+  };
+
+  if (!cfg.backgroundMusic.enabled || !cfg.backgroundMusic.src) return null;
+
+  return (
+    <>
+      <audio ref={audioRef} src={cfg.backgroundMusic.src} loop preload="auto" />
+      <button type="button" onClick={toggle} aria-label={isPlaying ? 'Pausar música' : 'Reproducir música'}
+        className="fixed bottom-4 left-4 z-50 flex items-center justify-center w-9 h-9 rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white/80 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
+        {isPlaying ? (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <rect x="6" y="5" width="4" height="14" rx="1" />
+            <rect x="14" y="5" width="4" height="14" rx="1" />
+          </svg>
+        ) : (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M7 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
     </>
   );
 }
@@ -695,15 +861,84 @@ function downloadLetter(cfg: typeof CONFIG) {
   }
 }
 
+// Navegación simple basada en hash para el easter egg (sin depender de react-router)
+function navigateToSecret() {
+  window.location.hash = '#secreto';
+}
+
+function navigateHome() {
+  window.location.hash = '';
+}
+
+function useIsSecretRoute(): boolean {
+  const [isSecret, setIsSecret] = useState(() => window.location.hash === '#secreto');
+  useEffect(() => {
+    const onHashChange = () => setIsSecret(window.location.hash === '#secreto');
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+  return isSecret;
+}
+
+// Página secreta revelada por el easter egg del sello
+function SecretPage({ cfg }: { cfg: typeof CONFIG }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0A0608] overflow-y-auto px-6 py-12">
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        backgroundSize: '180px 180px',
+      }} />
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse 55% 45% at 50% 40%, rgba(232,165,152,0.10) 0%, transparent 70%)',
+      }} />
+      <div className="relative z-10 flex flex-col items-center text-center max-w-md gap-6">
+        <div className="opacity-60">
+          <svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+            <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+            <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+            <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+            <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
+          </svg>
+        </div>
+
+        <h1 className="text-3xl sm:text-4xl font-serif font-light text-[#FFFDFD] tracking-tight leading-tight">
+          {cfg.easterEgg.surpriseTitle}
+        </h1>
+
+        {cfg.easterEgg.surpriseImage && (
+          <img src={cfg.easterEgg.surpriseImage} alt="Sorpresa especial"
+            className="max-w-xs w-full rounded-xl border border-[#4E313C]/30 shadow-2xl shadow-black/50" />
+        )}
+
+        <div className="space-y-3 text-[#C9BFB8] font-serif text-sm leading-relaxed font-light">
+          {cfg.easterEgg.surpriseMessage.map((paragraph, i) => (<p key={i}>{paragraph}</p>))}
+        </div>
+
+        <button type="button" onClick={navigateHome}
+          className="mt-2 px-8 py-3 rounded-full bg-[#E8A598]/10 border border-[#E8A598]/30 text-[#E8A598] font-serif text-sm tracking-wide hover:bg-[#E8A598]/20 hover:border-[#E8A598]/50 transition-all duration-300 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+          Volver
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [introComplete, setIntroComplete] = useState(false);
   const [contentVisible, setContentVisible] = useState(false);
+  const isSecretRoute = useIsSecretRoute();
 
   const monthsElapsed = getMonthsElapsed(CONFIG.anniversaryDate);
   const hasReached3Months = monthsElapsed >= 3;
 
   if (!hasReached3Months) {
     return <WaitingScreen startDate={CONFIG.anniversaryDate} />;
+  }
+
+  if (isSecretRoute) {
+    return <SecretPage cfg={CONFIG} />;
   }
 
   return (
@@ -722,6 +957,7 @@ export default function App() {
           opacity: contentVisible ? 1 : 0,
         }}>
         <AmbientLights />
+        <BackgroundMusicPlayer cfg={CONFIG} />
         <SideDecoration side="left" />
         <SideDecoration side="right" />
 
@@ -765,6 +1001,14 @@ export default function App() {
               </span>
             </FadeInSection>
 
+            {CONFIG.greetings.enabled && (
+              <FadeInSection direction="up" delay={180}>
+                <span className="text-[#E8A598] text-xs sm:text-sm italic font-light tracking-wide block">
+                  {getTimeOfDayGreeting(CONFIG)}
+                </span>
+              </FadeInSection>
+            )}
+
             <FadeInSection direction="up" delay={260}>
               <div className="space-y-1 relative">
                 <p className="text-[#E8A598] text-sm sm:text-base italic font-light tracking-wide">Felices</p>
@@ -782,7 +1026,7 @@ export default function App() {
 
             <FadeInSection direction="up" delay={480}>
               <p className="text-[#B59F9F] font-serif font-light text-sm sm:text-base leading-relaxed max-w-sm">
-                {(() => { const m = getMonthsElapsed(CONFIG.anniversaryDate); const l = getMonthLabel(m); return l.includes('año') ? `${l.charAt(0).toUpperCase() + l.slice(1)} que se sienten como toda una vida,` : `${l.charAt(0).toUpperCase() + l.slice(1)} que se sienten como una vida entera,`; })()}<br className="hidden sm:block" /> y a la vez como si apenas empezáramos.
+                Que se sienten como toda una vida,y a la vez como si apenas empezáramos.
               </p>
             </FadeInSection>
 
@@ -974,8 +1218,10 @@ export default function App() {
                   )}
                 </div>
               </FadeInSection>
-              {/* ─── DECORACIÓN 5: Sello circular ─── */}
-              {CONFIG.decorations.letterSeal && <LetterSeal />}
+              {/* ─── DECORACIÓN 5: Sello circular (easter egg) ─── */}
+              {CONFIG.decorations.letterSeal && (
+                <LetterSeal cfg={CONFIG} onUnlock={() => navigateToSecret()} />
+              )}
             </div>
           </FadeInSection>
         </section>
@@ -1013,11 +1259,25 @@ export default function App() {
           </div>
         </section>
 
-        <footer className="w-full min-h-[64px] flex items-center justify-center text-center shrink-0 snap-start snap-always bg-[#130D0F]"
+        <footer className="w-full min-h-[64px] flex flex-col items-center justify-center text-center gap-1.5 shrink-0 snap-start snap-always bg-[#130D0F] py-3"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          {(() => {
+            const { daysLeft, nextLabel } = getNextMilestone(CONFIG.anniversaryDate);
+            if (daysLeft <= 0) return null;
+            return (
+              <p className="text-[9px] text-[#8C7565] tracking-widest uppercase font-mono font-light">
+                Faltan {daysLeft} {daysLeft === 1 ? 'día' : 'días'} para los {nextLabel}
+              </p>
+            );
+          })()}
           <p className="text-[8px] text-[#6E4752] tracking-widest uppercase font-mono font-light">
             © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
           </p>
+          {CONFIG.easterEgg.enabled && CONFIG.easterEgg.hintText && (
+            <p className="text-[7px] text-[#4E313C]/70 tracking-widest uppercase font-mono font-light max-w-xs px-6 mt-0.5">
+              {CONFIG.easterEgg.hintText}
+            </p>
+          )}
         </footer>
       </div>
 

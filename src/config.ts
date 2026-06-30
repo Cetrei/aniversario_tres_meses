@@ -180,6 +180,48 @@ export interface TimelineMilestone {
   label: string;
 }
 
+export interface GreetingsConfig {
+  /** Mostrar el saludo personalizado según la hora del día (Sección 0). */
+  enabled: boolean;
+  /** Saludo mostrado entre las 5:00 y 11:59. Usa {name} para insertar el nombre destinatario. */
+  morning: string;
+  /** Saludo mostrado entre las 12:00 y 18:59. Usa {name} para insertar el nombre destinatario. */
+  afternoon: string;
+  /** Saludo mostrado entre las 19:00 y 4:59. Usa {name} para insertar el nombre destinatario. */
+  night: string;
+}
+
+export interface BackgroundMusicConfig {
+  /** Activa el reproductor de música de fondo (botón flotante). */
+  enabled: boolean;
+  /** Ruta relativa a /public del archivo de audio, p.ej. /audio/musica.mp3 */
+  src: string;
+  /** Volumen inicial, 0.0–1.0. Default: 0.35. */
+  volume: number;
+  /** Si empieza a sonar automáticamente al revelar el contenido (algunos navegadores lo bloquean si no hay interacción previa). Default: false. */
+  autoplay: boolean;
+}
+
+export interface EasterEggConfig {
+  /** Activa el easter egg del sello de la carta (Sección 5). */
+  enabled: boolean;
+  /**
+   * Ángulo objetivo en grados (0-360) al que hay que girar el sello para
+   * revelar la sorpresa. Se acepta un rango de tolerancia alrededor de este valor.
+   */
+  targetAngle: number;
+  /** Tolerancia en grados alrededor de targetAngle para considerar "acertado". Default: 12. */
+  toleranceDeg: number;
+  /** Pista sutil que se muestra en el footer, lejos del sello. */
+  hintText: string;
+  /** Título de la página secreta. */
+  surpriseTitle: string;
+  /** Mensaje(s) de la página secreta, uno o varios párrafos. */
+  surpriseMessage: string[];
+  /** Ruta relativa a /public de la foto especial que se muestra en la página secreta. Vacío para omitirla. */
+  surpriseImage: string;
+}
+
 export interface DecorationsConfig {
   /** Línea de tiempo vertical sutil junto al número grande de la portada (Sección 0). Se oculta en móvil/tablet (solo lg+) para no estorbar ni gastar render en pantallas chicas. */
   coverTimeline: boolean;
@@ -219,6 +261,12 @@ export interface CoupleConfig {
   rouletteSpinPhrases: string[];
   /** Hitos para la línea de tiempo de la portada. Se ignora si coverTimeline está desactivado. */
   timelineMilestones: TimelineMilestone[];
+  /** Saludo personalizado según la hora del día. */
+  greetings: GreetingsConfig;
+  /** Música de fondo en loop. */
+  backgroundMusic: BackgroundMusicConfig;
+  /** Easter egg del sello de la carta. */
+  easterEgg: EasterEggConfig;
   /** Toggle de decoraciones visuales por sección */
   decorations: DecorationsConfig;
 }
@@ -495,5 +543,32 @@ export const CONFIG: CoupleConfig = {
     rouletteShimmer: true,
     smileSliderDecor: true,
     busetaDecor: true,
+  },
+
+  greetings: {
+    enabled: true,
+    morning: "Buenos días, {name}",
+    afternoon: "Buenas tardes, {name}",
+    night: "Buenas noches, {name}",
+  },
+
+  backgroundMusic: {
+    enabled: true,
+    src: "/audio/musica.mp3",
+    volume: 0.35,
+    autoplay: false,
+  },
+
+  easterEgg: {
+    enabled: true,
+    targetAngle: 222,
+    toleranceDeg: 12,
+    hintText: "Hay un secreto escondido en esta página. Algo que gira, no todo es lo que parece 🔎",
+    surpriseTitle: "Encontraste el secreto",
+    surpriseMessage: [
+      "Sabía que tarde o temprano lo ibas a encontrar, eres demasiado curiosa y observadora para dejarlo pasar.",
+      "Este es un pequeño extra que quise dejar escondido solo para ti, como un secreto que solo nosotros dos compartimos.",
+    ],
+    surpriseImage: "",
   },
 };
