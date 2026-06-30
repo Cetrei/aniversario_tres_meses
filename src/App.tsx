@@ -1230,14 +1230,21 @@ function useIsSecretRoute(): boolean {
 
 function SecretPhotoFlourish({ flip }: { flip?: boolean }) {
   return (
-    <svg width="20" height="42" viewBox="0 0 20 42" aria-hidden="true" className="shrink-0"
-      style={{ opacity: 0.5, transform: flip ? 'scaleX(-1)' : undefined }}>
-      <path d="M10 40 Q8 28 10 18" stroke="#7B5EA7" strokeWidth="1" fill="none" strokeLinecap="round" />
-      <path d="M10 18 C5 12 5 4 10 1 C15 4 15 12 10 18Z" fill="#E8A598" opacity="0.85" />
-      <path d="M10 18 C4 15 1 9 3 4 Q8 8 10 16Z" fill="#B39DDB" opacity="0.65" />
-      <path d="M10 18 C16 15 19 9 17 4 Q12 8 10 16Z" fill="#9575CD" opacity="0.5" />
-      <circle cx="10" cy="9" r="1.6" fill="#FFFDFD" opacity="0.55" />
-      <circle cx="10" cy="30" r="1.2" fill="#E8A598" opacity="0.4" />
+    <svg width="22" height="44" viewBox="0 0 22 44" aria-hidden="true" className="shrink-0"
+      style={{ opacity: 0.55, transform: flip ? 'scaleX(-1)' : undefined }}>
+      {/* Tallo */}
+      <path d="M11 42 Q9 30 11 21" stroke="#6B5A4E" strokeWidth="1" fill="none" strokeLinecap="round" />
+      {/* Hojas */}
+      <path d="M11 33 Q5 31 3 26 Q9 27 11 33Z" fill="#8C7565" opacity="0.45" />
+      <path d="M11 27 Q17 25 19 20 Q13 21 11 27Z" fill="#8C7565" opacity="0.4" />
+      {/* Rosa: capas de pétalos en espiral */}
+      <circle cx="11" cy="10" r="7.5" fill="#C97A8D" opacity="0.12" />
+      <path d="M11 10 C6.5 8.5 6 4.5 11 2 C15.5 4.5 15.5 8.5 11 10Z" fill="#D98EA0" opacity="0.9" />
+      <path d="M11 10 C6.5 9.5 4.5 6.5 6.5 3.5 C9.5 5.5 11.5 8 11 10Z" fill="#C97A8D" opacity="0.75" />
+      <path d="M11 10 C15.5 9.5 17.5 6.5 15.5 3.5 C12.5 5.5 10.5 8 11 10Z" fill="#E8A598" opacity="0.85" />
+      <path d="M11 10 C7.5 12.5 5.5 16 8 18 C9.5 14.5 10.5 12 11 10Z" fill="#B05C72" opacity="0.65" />
+      <path d="M11 10 C14.5 12.5 16.5 16 14 18 C12.5 14.5 11.5 12 11 10Z" fill="#C97A8D" opacity="0.65" />
+      <circle cx="11" cy="9" r="1.4" fill="#FBE3E8" opacity="0.55" />
     </svg>
   );
 }
