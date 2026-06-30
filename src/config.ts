@@ -350,7 +350,7 @@ export const CONFIG: CoupleConfig = {
     to: "Mamor 💗",
   },
 
-  anniversaryDate: "2026-03-01T00:00:00",
+  anniversaryDate: "2026-04-01T00:00:00",
 
 "loveLetter": {
     "place": "San José, 28 de junio de 2026",
@@ -596,15 +596,18 @@ export const CONFIG: CoupleConfig = {
       { targetAngle: 3, holdSeconds: 5, toleranceDeg: 4, hintText: "El segundo llegó el 3 del 5..." },
       { targetAngle: 180, holdSeconds: 2, toleranceDeg: 4, hintText: "Ahora al revés, como loquitos 🙃" },
     ],
-    hintText: "Hay un secreto que gira, no todo es lo que parece 🔎",
+    hintText: "Busca el secreto que escondi, pude girar y nos representa 🔎",
     surpriseTitle: "Tu premio: el secreto que somos nosotros",
-    surpriseMessage: [
-      "Sabía que tarde o temprano ibas a romper este código. Eres demasiado curiosa, inteligente y observadora para dejarlo sin resolver. Llegar hasta aquí no fue cualquier cosa, así que bienvenida a tu premio: el secreto más profundo que guardo sobre nosotros dos.",
-      "El sello no empieza el día que aceptaste ser mi novia. Empieza el 27 de febrero y el 3 de mayo, los días en que tú y yo nacimos. Porque para mí, nuestra historia no comenzó cuando dijiste que sí, sino mucho antes: el día en que cada uno llegó a este mundo a esperar, sin saberlo, encontrarse con el otro. Creo de verdad que somos almas gemelas, y que el amor de mi vida ya existía mucho antes de conocerla.",
-      "¿Notaste que las dos primeras J están de cabeza? No es un error. Somos un par de loquitos sanando, creciendo y aprendiendo juntos, a veces patas arriba, casi siempre en caos... pero en ese caos, nos entendemos como nadie más lo hace. Ante la adversidad nos tenemos el uno al otro, y eso, para mí, lo vuelve todo más fácil.",
-      "Quiero construir un futuro contigo. Quiero vivir toda mi vida a tu lado, decirte cuánto te amo cada mañana, besarte, cuidarte, atesorarte, respetarte y hacerte sentir tan especial como en verdad lo eres. No me importa el resto del mundo: solo tú. Cuando intento imaginar una vida sin ti, simplemente no veo nada. Y si tener que ser el villano de la historia fuera lo que hace falta para tenerte a mi lado, lo sería sin pensarlo dos veces.",
-      "Soy creyente, y eso me da una paz enorme, porque si el destino de alguien tan maravillosa como tú fuera la nada, este universo sería un lugar miserable. Por eso también quiero que creas: no te pido que seas católica ni nada parecido, pero si alguna vez te da curiosidad, preguntáme y te cuento cómo lo veo yo. Tal vez me creas, tal vez no, pero nos conviene que haya una vida después de esta, para poder estar juntos por siempre.",
-    ],
+    "surpriseMessage": [
+    "Sabía que tarde o temprano ibas a romper este código. Eres demasiado curiosa, inteligente y observadora para dejarlo sin resolver. Llegar hasta aquí no fue cualquier cosa, así que bienvenida a tu premio, mi Jaguarcita: el secreto más profundo y sincero que guardo sobre nosotros dos.",
+    "El sello de lo nuestro no empieza el día que aceptaste ser mi novia. Empieza el 27 de febrero y el 3 de mayo, los días en que tú y yo nacimos. Porque para mí, nuestra historia no comenzó cuando dijiste que sí, sino mucho antes: el día en que cada uno llegó a este mundo a esperar, sin saberlo, encontrarse con el otro. Creo de verdad que somos almas gemelas, y que el amor de mi vida ya existía mucho antes de conocerla.",
+    "¿Notaste que las dos primeras J están de cabeza? No es un error. Somos un par de loquitos sanando, creciendo y aprendiendo juntos, a veces patas arriba, casi siempre en caos... pero en ese caos, nos entendemos como nadie más lo hace. Esas 'J' al revés me recuerdan a cuando empezamos a hablar en el cole; desde ahí me tenías loco. Cada momento contigo era especial: ir a llenar las botellas de agua, hablar en media clase aunque nos regañaran, o estar sentados en la mesa con los demás sabiendo que, aunque hubiera mucha gente alrededor, mi interés y mis ojos estaban puestos únicamente en ti.",
+    "Eres tan hermosa, magnífica y especial, que jamás creí tener una oportunidad, y cuando nos alejamos después de confesarte lo que sentía, me dolió el alma. En mi primer año de universidad intenté distraerme, obligarme a no pensarte, pero era imposible: veía tu rostro en cada esquina y pasaba las noches llorando. Ese arrepentimiento, sumado a problemas que me guardé y por los que nunca lloré, me llevaron a un punto crítico y muy oscuro donde quise hacerme daño. Pero en medio del pánico de mis propios pensamientos, fuiste tú quien me salvó sin darte cuenta. Pensar en ti, en tu sonrisa y en tu voz fue lo que me motivó a aferrarme a la luz, a llamar a mis amigos para calmarme y a dar los pasos necesarios para superarme. Te convertiste en mi inspiración para VIVIR.",
+    "Tras tocar ese fondo, entendí que la vida es muy corta para no luchar por lo que uno ama. Empecé a sanar, a encontrar paz y a entender que soy un buen hombre; que Joanfer es suficiente. Y con ese valor, decidí entregar mi corazón al desnudo ante ti. Fui con ese regalo elaborado a mano y te dije las cosas cara a cara, aun pensando que te gustaba alguien más. No lo hice para cerrar una etapa, sino porque sabía que mi corazón solo late por ti. Si me hubieras dicho que no, estoy seguro de que me habría quedado solo el resto de mi vida; no por drama ni despecho, sino porque nadie más me da esta paz, nadie más me inspira y nadie me hace latir el corazón como tú, mi mamorsh.",
+    "Por eso ahora que lo nuestro es real, mi marinovia, mi amor por ti es más sólido que cualquier montaña. Es incondicional; tu mera existencia en este planeta ya es suficiente para mí. Amar es cuidar, escuchar, entender y, sobre todo, regocijarse en la existencia del otro. Cuando te digo que no veo un futuro sin ti, no lo digo de forma trágica (ahí terminaría debajo de un puente en todo caso...), lo digo porque un futuro donde no estés simplemente no tiene sentido. Solo tengo una vida, y quiero que sea tuya y de nadie más, mamoshi.",
+    "Como sabes, soy un hombre creyente, y esto es fundamental para mí. No creo en Jesús por una necesidad de llenar vacíos; creo en Él porque sé que la evidencia histórica apunta a su existencia y porque, a través de su sacrificio, todo calza a la perfección: la moral, el sentido de la justicia y el amor mismo. Su sacrificio le da un valor infinito a la vida de cada persona y genera orden en medio de este universo de caos. Por eso me da tanta paz saber que nos conviene que haya una vida después de esta, mi princesa, porque un amor tan inmenso como el nuestro merece ser vivido por toda la eternidad.",
+    "Mientras lees esto, mi microbio, yo estoy aquí, conteniendo mis propias lágrimas por la emoción tan inmensa de tener a mi lado a la persona que tanto amé en secreto. Por el niño del colegio que solo te miraba a ti, por el joven que recordó tu sonrisa para sobrevivir a su noche más oscura, y por el hombre que hoy te ama con cada fibra de su ser... te pregunto con el alma al desnudo: ¿me darías tu vida?"
+  ],
     surpriseImage: "/images/secreto.webp",
   },
 

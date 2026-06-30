@@ -1928,7 +1928,7 @@ export default function App() {
             © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
           </p>
           {CONFIG.easterEgg.enabled && CONFIG.easterEgg.hintText && (
-            <p className="text-[7px] text-[#70535E]/70 tracking-widest uppercase font-mono font-light max-w-xs px-6 mt-0.5">
+            <p className="text-[10px] text-[#A68B95]/70 tracking-widest uppercase font-mono font-light max-w-xs px-6 mt-0.5">
               {CONFIG.easterEgg.hintText}
             </p>
           )}
