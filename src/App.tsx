@@ -666,7 +666,7 @@ function getHintsForLocation(location: string, hints: typeof CONFIG.hiddenHints)
 }
 
 const INTRO_STEPS = [
-  { text: null, sub: null, duration: 1200 },
+  { text: "Usa audifonos", sub: "💌", duration: 1200 },
   { text: 'Para ti.', sub: null, duration: 1400 },
   { text: 'Que eres', sub: 'mi lugar favorito.', duration: 1600 },
   { text: getMonthNumber(getMonthsElapsed(CONFIG.anniversaryDate)) + ' meses', sub: 'de lo mejor.', duration: 1600 },
