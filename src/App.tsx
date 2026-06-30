@@ -806,7 +806,7 @@ function AmbientLights() {
 function BackgroundMusicPlayer({ cfg }: { cfg: typeof CONFIG }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [triedAutoplay, setTriedAutoplay] = useState(false);
+  const hasAutoplayed = useRef(false);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -815,12 +815,38 @@ function BackgroundMusicPlayer({ cfg }: { cfg: typeof CONFIG }) {
   }, [cfg.backgroundMusic.volume]);
 
   useEffect(() => {
-    if (!cfg.backgroundMusic.autoplay || triedAutoplay) return;
-    setTriedAutoplay(true);
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.play().then(() => setIsPlaying(true)).catch(() => {});
-  }, [cfg.backgroundMusic.autoplay, triedAutoplay]);
+    if (!cfg.backgroundMusic.autoplay) return;
+
+    const tryPlay = () => {
+      if (hasAutoplayed.current) return;
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.play()
+        .then(() => { hasAutoplayed.current = true; setIsPlaying(true); })
+        .catch(() => {});
+    };
+
+    // Intenta de inmediato (funciona en wrangler/dev y browsers con autoplay permitido)
+    tryPlay();
+
+    // Fallback: primer gesto real del usuario (click en "Saltar", tap, tecla)
+    const handleFirstInteraction = () => {
+      tryPlay();
+      window.removeEventListener('click', handleFirstInteraction, true);
+      window.removeEventListener('touchend', handleFirstInteraction, true);
+      window.removeEventListener('keydown', handleFirstInteraction, true);
+    };
+
+    window.addEventListener('click', handleFirstInteraction, true);
+    window.addEventListener('touchend', handleFirstInteraction, true);
+    window.addEventListener('keydown', handleFirstInteraction, true);
+
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction, true);
+      window.removeEventListener('touchend', handleFirstInteraction, true);
+      window.removeEventListener('keydown', handleFirstInteraction, true);
+    };
+  }, [cfg.backgroundMusic.autoplay]);
 
   const toggle = () => {
     const audio = audioRef.current;
