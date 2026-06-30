@@ -305,7 +305,7 @@ function playUnlockSound() {
   setTimeout(() => playTone(1319, 0.8, 'sine', 0.2), 500);
 }
 
-function LetterSeal({ cfg, unlocked, onUnlock, onDiscover }: { cfg: typeof CONFIG; unlocked: boolean; onUnlock: () => void; onDiscover: () => void }) {
+function LetterSeal({ cfg, unlocked, onReady, onDiscover }: { cfg: typeof CONFIG; unlocked: boolean; onReady: () => void; onDiscover: () => void }) {
   const [angle, setAngle] = useState(0);
   const [currentStep, setCurrentStep] = useState(unlocked ? cfg.easterEgg.sealSteps.length : 0);
   const [stepProgress, setStepProgress] = useState(0);
@@ -358,17 +358,17 @@ function LetterSeal({ cfg, unlocked, onUnlock, onDiscover }: { cfg: typeof CONFI
   const completeStep = useCallback((stepIndex: number) => {
     playStepSound(stepIndex);
     setCompletedSteps(prev => [...prev, stepIndex]);
-    setShowHint(steps[stepIndex].hintText || null);
-    setTimeout(() => setShowHint(null), 3000);
-    
+
     if (stepIndex === steps.length - 1) {
       unlockedRef.current = true;
       playUnlockSound();
-      setTimeout(() => onUnlock(), 800);
+      setTimeout(() => onReady(), 600);
     } else {
+      setShowHint(steps[stepIndex].hintText || null);
+      setTimeout(() => setShowHint(null), 3000);
       setCurrentStep(stepIndex + 1);
     }
-  }, [steps, onUnlock]);
+  }, [steps, onReady]);
 
   const checkStep = useCallback((currentAngle: number) => {
     if (!cfg.easterEgg.enabled || unlockedRef.current) return;
@@ -796,6 +796,31 @@ function GreetingPopup({ text, shrink, targetTop }: { text: string; shrink: bool
   );
 }
 
+function RevealSecretPrompt({ hintText, onOpen }: { hintText: string | null; onOpen: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[90] flex justify-center px-6"
+      style={{ paddingTop: '30vh', background: 'rgba(10,6,8,0.55)', backdropFilter: 'blur(2px)' }}>
+      <div className="flex flex-col items-center text-center gap-4 max-w-xs">
+        <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style={{ opacity: 0.6 }}>
+          <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+          <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+          <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+          <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+          <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
+        </svg>
+        {hintText && (
+          <p className="text-[10px] font-mono tracking-widest text-[#E8A598]/80 uppercase">{hintText}</p>
+        )}
+        <p className="text-xl sm:text-2xl font-serif italic text-[#FFFDFD] leading-snug">Tu secreto está listo</p>
+        <button type="button" onClick={onOpen}
+          className="mt-1 px-8 py-3 rounded-full bg-[#E8A598]/15 border border-[#E8A598]/40 text-[#E8A598] font-serif text-sm tracking-widest hover:bg-[#E8A598]/25 hover:border-[#E8A598]/60 active:scale-95 transition-all duration-300">
+          Abrir secreto
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AmbientLights() {
   return (
     <>
@@ -1203,6 +1228,20 @@ function useIsSecretRoute(): boolean {
   return isSecret;
 }
 
+function SecretPhotoFlourish({ flip }: { flip?: boolean }) {
+  return (
+    <svg width="20" height="42" viewBox="0 0 20 42" aria-hidden="true" className="shrink-0"
+      style={{ opacity: 0.5, transform: flip ? 'scaleX(-1)' : undefined }}>
+      <path d="M10 40 Q8 28 10 18" stroke="#7B5EA7" strokeWidth="1" fill="none" strokeLinecap="round" />
+      <path d="M10 18 C5 12 5 4 10 1 C15 4 15 12 10 18Z" fill="#E8A598" opacity="0.85" />
+      <path d="M10 18 C4 15 1 9 3 4 Q8 8 10 16Z" fill="#B39DDB" opacity="0.65" />
+      <path d="M10 18 C16 15 19 9 17 4 Q12 8 10 16Z" fill="#9575CD" opacity="0.5" />
+      <circle cx="10" cy="9" r="1.6" fill="#FFFDFD" opacity="0.55" />
+      <circle cx="10" cy="30" r="1.2" fill="#E8A598" opacity="0.4" />
+    </svg>
+  );
+}
+
 // ============ PÁGINA SECRETA ============
 // Ahora regresa a la sección de la carta en lugar de solo limpiar el hash
 function SecretPage({ cfg, onReturn }: { cfg: typeof CONFIG; onReturn: () => void }) {
@@ -1255,8 +1294,12 @@ function SecretPage({ cfg, onReturn }: { cfg: typeof CONFIG; onReturn: () => voi
           </div>
 
           {cfg.easterEgg.surpriseImage && (
-            <img src={cfg.easterEgg.surpriseImage} alt="Sorpresa especial"
-              className="mx-auto mb-5 w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border border-[#E8A598]/30 shadow-lg shadow-black/40" />
+            <div className="flex items-center justify-center gap-3 sm:gap-5 mb-5">
+              <SecretPhotoFlourish />
+              <img src={cfg.easterEgg.surpriseImage} alt="Sorpresa especial"
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border border-[#E8A598]/30 shadow-lg shadow-black/40 shrink-0" />
+              <SecretPhotoFlourish flip />
+            </div>
           )}
 
           <div className="space-y-4 text-[#C9BFB8] font-serif text-[13px] sm:text-sm leading-relaxed font-light text-left max-h-[46vh] overflow-y-auto pr-2 letter-scrollbar">
@@ -1333,6 +1376,7 @@ export default function App() {
   const isSecretRoute = useIsSecretRoute();
   const [hintsDiscovered, setHintsDiscovered] = useState(false);
   const [secretUnlocked, setSecretUnlocked] = useState(false);
+  const [secretReady, setSecretReady] = useState(false);
   const [secretNoticeShown, setSecretNoticeShown] = useState(false);
   const [secretNoticeVisible, setSecretNoticeVisible] = useState(false);
 
@@ -1435,6 +1479,17 @@ export default function App() {
 
       {showGreetingPopup && greetingText && (
         <GreetingPopup text={greetingText} shrink={greetingShrink} targetTop={dockTargetTop} />
+      )}
+
+      {secretReady && (
+        <RevealSecretPrompt
+          hintText={CONFIG.easterEgg.sealSteps[CONFIG.easterEgg.sealSteps.length - 1]?.hintText ?? null}
+          onOpen={() => {
+            setSecretReady(false);
+            setSecretUnlocked(true);
+            navigateToSecret();
+          }}
+        />
       )}
 
       <div className="w-full h-[100dvh] overflow-y-auto snap-y snap-mandatory scroll-smooth bg-[#130D0F] text-[#EDE7E5] font-serif hide-scrollbar relative"
@@ -1769,7 +1824,7 @@ export default function App() {
               </div>
               
               {CONFIG.decorations.letterSeal && (
-                <LetterSeal cfg={CONFIG} unlocked={secretUnlocked} onUnlock={() => { setSecretUnlocked(true); navigateToSecret(); }} onDiscover={() => setHintsDiscovered(true)} />
+                <LetterSeal cfg={CONFIG} unlocked={secretUnlocked} onReady={() => setSecretReady(true)} onDiscover={() => setHintsDiscovered(true)} />
               )}
             </div>
           </FadeInSection>
