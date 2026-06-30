@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { DateIdea } from '../config';
@@ -15,6 +16,49 @@ interface ConfettiPetal {
   color: string;
   delay: number;
   duration: number;
+}
+
+// UTILIDAD DE SONIDO
+// 🎵 Toggle fácil: cambia a false para silenciar todos los sonidos de la ruleta
+const SOUND_ENABLED = true;
+
+function playSoftTone(freq: number, duration: number, type: OscillatorType = 'sine', volume: number = 0.08, delay: number = 0) {
+  if (!SOUND_ENABLED) return;
+  try {
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+    gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + delay + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + duration);
+    setTimeout(() => ctx.close(), (delay + duration) * 1000 + 100);
+  } catch (e) {}
+}
+
+function playSpinSound() {
+  // Arpegio suave ascendente — celebra sin ser invasivo
+  playSoftTone(523.25, 0.35, 'sine', 0.06, 0.00);   // Do
+  playSoftTone(659.25, 0.35, 'sine', 0.05, 0.12);   // Mi
+  playSoftTone(783.99, 0.40, 'sine', 0.04, 0.24);   // Sol
+  //playSoftTone(1046.50, 0.50, 'sine', 0.03, 0.36);  // Do alta
+}
+
+function playWinSound() {
+  // Acorde mayor brillante al revelar resultado
+  //playSoftTone(523.25, 0.30, 'triangle', 0.04, 0.00);
+  //playSoftTone(659.25, 0.30, 'triangle', 0.04, 0.05);
+  //playSoftTone(783.99, 0.30, 'triangle', 0.04, 0.10);
+  //playSoftTone(1046.50, 0.60, 'triangle', 0.03, 0.15);
+  // Campanita final
+  playSoftTone(1318.51, 0.80, 'sine', 0.02, 0.35);
 }
 
 function downloadCoupon(idea: DateIdea) {
@@ -83,8 +127,8 @@ function downloadCoupon(idea: DateIdea) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  const emoji = idea.title.match(/^\S+/)?.[0] ?? '🌸';
-  const titleText = idea.title.replace(/^\S+\s*/, '');
+  const emoji = idea.title.match(/^\\S+/)?.[0] ?? '🌸';
+  const titleText = idea.title.replace(/^\\S+\\s*/, '');
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#FFFDFD';
@@ -140,7 +184,7 @@ function downloadCoupon(idea: DateIdea) {
 
   const link = document.createElement('a');
   link.href = canvas.toDataURL('image/png');
-  link.download = `validez-cita-${titleText.toLowerCase().replace(/\s+/g, '-').slice(0, 25)}.png`;
+  link.download = `validez-cita-${titleText.toLowerCase().replace(/\\s+/g, '-').slice(0, 25)}.png`;
   link.click();
 }
 
@@ -201,6 +245,9 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
     setConfetti([]);
     setShowManual(false);
 
+    // 🎵 Sonido suave de celebración al iniciar el giro
+    playSpinSound();
+
     // Elige la siguiente frase del pool (sin repetición hasta agotar todas)
     const phrases = spinPhrases.length > 0 ? spinPhrases : ['Buscando nuestro próximo destino...'];
     const { nextIndex: phraseIdx, newPool: newPhrasePool } = drawFromGenericPool(phrasePool, phrases.length);
@@ -228,6 +275,9 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
         setSpinning(false);
         setSpinCount((n) => n + 1);
         if (allSeen) setSeenAll(true);
+
+        // 🎵 Sonido de victoria al revelar el resultado
+        playWinSound();
 
         // Lluvia de confeti orgánica en forma de pétalos cayendo
         const petalColors = ['#E8A598', '#FFD4E2', '#FFFDFD', '#543641'];
@@ -353,6 +403,8 @@ export default function DateRoulette({ options, spinPhrases, spinDurationMs }: D
                       setSelected(opt);
                       setSpinCount((n) => n + 1);
                       setShowManual(false);
+                      // 🎵 Sonido sutil también al elegir manualmente
+                      playSoftTone(659.25, 0.25, 'sine', 0.05);
                     }}
                     className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 ${
                       selected?.title === opt.title

@@ -1,3 +1,4 @@
+
 export interface PhotoEntry {
   /** Ruta relativa a /public, p.ej. /images/foto.webp */
   url: string;
@@ -202,16 +203,25 @@ export interface BackgroundMusicConfig {
   autoplay: boolean;
 }
 
+export interface SealStep {
+  /** Ángulo objetivo en grados (0-360) para este paso */
+  targetAngle: number;
+  /** Tiempo en segundos que debe mantenerse en ese ángulo para completar el paso */
+  holdSeconds: number;
+  /** Tolerancia en grados alrededor del ángulo objetivo */
+  toleranceDeg: number;
+  /** Texto de pista que aparece al completar este paso (null para no mostrar) */
+  hintText?: string;
+}
+
 export interface EasterEggConfig {
   /** Activa el easter egg del sello de la carta (Sección 5). */
   enabled: boolean;
   /**
-   * Ángulo objetivo en grados (0-360) al que hay que girar el sello para
-   * revelar la sorpresa. Se acepta un rango de tolerancia alrededor de este valor.
+   * Secuencia de pasos para desbloquear el easter egg.
+   * Cada paso requiere mantener el sello en un ángulo específico durante un tiempo.
    */
-  targetAngle: number;
-  /** Tolerancia en grados alrededor de targetAngle para considerar "acertado". Default: 12. */
-  toleranceDeg: number;
+  sealSteps: SealStep[];
   /** Pista sutil que se muestra en el footer, lejos del sello. */
   hintText: string;
   /** Título de la página secreta. */
@@ -220,6 +230,21 @@ export interface EasterEggConfig {
   surpriseMessage: string[];
   /** Ruta relativa a /public de la foto especial que se muestra en la página secreta. Vacío para omitirla. */
   surpriseImage: string;
+  /** Ruta a sonido de paso completado (dejar vacío para tono generado). */
+  stepSound?: string;
+  /** Ruta a sonido de desbloqueo final (dejar vacío para tono generado). */
+  unlockSound?: string;
+}
+
+export interface HiddenHint {
+  /** ID único de la pista */
+  id: string;
+  /** Texto de la pista */
+  text: string;
+  /** Sección donde aparece: 'hero' | 'tree' | 'smile' | 'buseta' | 'gallery' | 'letter' | 'roulette' | 'milestone' | 'footer' */
+  location: string;
+  /** Estilo de ocultamiento: 'subtle' (texto normal que parece decorativo), 'micro' (texto microscópico), 'acrostic' (primera letra de cada palabra forma algo), 'coords' (coordenadas/ángulos) */
+  style: 'subtle' | 'micro' | 'acrostic' | 'coords' | 'symbol';
 }
 
 export interface DecorationsConfig {
@@ -269,6 +294,8 @@ export interface CoupleConfig {
   easterEgg: EasterEggConfig;
   /** Toggle de decoraciones visuales por sección */
   decorations: DecorationsConfig;
+  /** Pistas escondidas por toda la página que guían al acertijo del sello */
+  hiddenHints: HiddenHint[];
 }
 
 export const CONFIG: CoupleConfig = {
@@ -530,6 +557,7 @@ export const CONFIG: CoupleConfig = {
   timelineMilestones: [
     { date: "2019-03-01", label: "Nos conocimos la primera vez" },
     { date: "2022-05-01", label: "Empezamos a hablar" },
+    { date: "2024-01-02", label: "Nos distanciamos" },
     { date: "2025-04-01", label: "Volvimos a ser más cercanos" },
     { date: "2026-04-1", label: "Empezamos como marinovios" },
   ],
@@ -561,14 +589,43 @@ export const CONFIG: CoupleConfig = {
 
   easterEgg: {
     enabled: true,
-    targetAngle: 222,
-    toleranceDeg: 12,
-    hintText: "Hay un secreto escondido en esta página. Algo que gira, no todo es lo que parece 🔎",
+    // Secuencia de 3 pasos:
+    // Paso 1: Primer J (Joanfer) → 3/5 → 3 grados, 5 segundos
+    // Paso 2: Segunda J (Jimena) → 27/2 → 27 grados, 2 segundos  
+    // Paso 3: Ambas J al revés (locos) → 270 grados → desbloqueo
+    sealSteps: [
+      { targetAngle: 3, holdSeconds: 5, toleranceDeg: 5, hintText: "El primero llegó el 3 del 5..." },
+      { targetAngle: 27, holdSeconds: 2, toleranceDeg: 5, hintText: "La segunda el 27 del 2..." },
+      { targetAngle: 180, holdSeconds: 2, toleranceDeg: 5, hintText: "Ahora al revés, como loquitos 🙃" },
+    ],
+    hintText: "Hay algo que gira, no todo es lo que parece 🔎",
     surpriseTitle: "Encontraste el secreto",
     surpriseMessage: [
       "Sabía que tarde o temprano lo ibas a encontrar, eres demasiado curiosa y observadora para dejarlo pasar.",
       "Este es un pequeño extra que quise dejar escondido solo para ti, como un secreto que solo nosotros dos compartimos.",
     ],
-    surpriseImage: "",
+    surpriseImage: "/images/secreto.webp",
   },
+
+  // Pistas escondidas por toda la página
+  // Cada una apunta sutilmente a las fechas de cumpleaños o al acertijo
+  hiddenHints: [
+    // Hero - coordenadas sutiles
+    { id: "hero-1", text: "3° al norte, 5 minutos de espera", location: "hero", style: "coords" },
+     // Árbol - acróstico con las fechas
+    //{ id: "tree-1", text: "Vemos como todo florece en .Febrero. hasta que llega .Abril.", location: "tree", style: "acrostic" },
+    // Smile slider - símbolos
+    { id: "smile-1", text: "↻ 5s · ↻ 2s · ↻ 2s: °? · °? · °?", location: "smile", style: "symbol" },
+    // Buseta - micro texto
+    { id: "buseta-1", text: "Una familia patas arriba ↻", location: "buseta", style: "micro" },
+    // Galería - coordenadas en caption-like
+    { id: "gallery-1", text: "Nuestro amor florece en .Febrero. y resplandece en .Abril.", location: "gallery", style: "subtle" },
+    // Carta - acróstico visible
+    { id: "letter-1", text: "Juntos siempre, mi amor. Incluso al revés.", location: "letter", style: "acrostic" },
+    // Ruleta - símbolos de ángulos
+    { id: "roulette-1", text: "3 es un numero grandioso, no crees?", location: "roulette", style: "symbol" },
+    // Milestone - micro
+    { id: "milestone-1", text: "Gira el sello como giran los cumpleaños", location: "milestone", style: "micro" },
+    // Footer - ya tiene el hint principal del easter egg
+  ],
 };

@@ -53,19 +53,15 @@ function getTimeUntil3Months(startDate: string): { days: number; hours: number; 
   return { days, hours, minutes, seconds, totalMs: diff, hasReached: false };
 }
 
-// Calcula cuántos días faltan para el próximo mes/año cumplido de relación
 function getNextMilestone(startDate: string): { daysLeft: number; nextLabel: string } {
   const start = new Date(startDate);
   const now = new Date();
   const monthsElapsed = getMonthsElapsed(startDate);
   const nextMonths = monthsElapsed + 1;
-
   const nextDate = new Date(start);
   nextDate.setMonth(nextDate.getMonth() + nextMonths);
-
   const diffMs = nextDate.getTime() - now.getTime();
   const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-
   let nextLabel: string;
   if (nextMonths < 12) {
     nextLabel = `${nextMonths} ${nextMonths === 1 ? 'mes' : 'meses'}`;
@@ -78,11 +74,9 @@ function getNextMilestone(startDate: string): { daysLeft: number; nextLabel: str
       nextLabel = `${years} ${years === 1 ? 'año' : 'años'} y ${rem} ${rem === 1 ? 'mes' : 'meses'}`;
     }
   }
-
   return { daysLeft, nextLabel };
 }
 
-// Saludo según la hora del día, configurable desde config.ts
 function getTimeOfDayGreeting(cfg: typeof CONFIG): string | null {
   if (!cfg.greetings.enabled) return null;
   const hour = new Date().getHours();
@@ -175,7 +169,6 @@ function WaitingScreen({ startDate }: { startDate: string }) {
   );
 }
 
-// Constelaciones/estrellas detrás del árbol
 function TreeConstellation() {
   const stars = [
     { cx: 12, cy: 8, r: 2.0, o: 0.35 }, { cx: 28, cy: 15, r: 1.5, o: 0.25 },
@@ -214,7 +207,6 @@ function TreeConstellation() {
   );
 }
 
-// Glow cálido tipo lámpara detrás de la carta
 function LetterPaperGlow() {
   return (
     <div className="absolute inset-0 pointer-events-none" style={{
@@ -224,9 +216,7 @@ function LetterPaperGlow() {
   );
 }
 
-// Pétalos estáticos en la galería
 function GalleryPetals() {
-  // Usamos divs CSS en vez de SVG translate() porque SVG no acepta % en transform
   type PetalEntry = {
     pos: 'left' | 'right';
     x: string;
@@ -237,19 +227,16 @@ function GalleryPetals() {
     mobileOnly?: boolean;
   };
   const petals: PetalEntry[] = [
-    // Lado izquierdo — sm+
     { pos: 'left',  x: '2%', y: '15%', w: 22, rot:  25, o: 0.45 },
     { pos: 'left',  x: '6%', y: '35%', w: 18, rot: -15, o: 0.38 },
     { pos: 'left',  x: '3%', y: '55%', w: 24, rot:  40, o: 0.42 },
     { pos: 'left',  x: '8%', y: '75%', w: 20, rot: -30, o: 0.35 },
     { pos: 'left',  x: '4%', y: '90%', w: 16, rot:  12, o: 0.40 },
-    // Lado derecho — sm+
     { pos: 'right', x: '2%', y: '12%', w: 20, rot: -20, o: 0.42 },
     { pos: 'right', x: '6%', y: '32%', w: 26, rot:  15, o: 0.35 },
     { pos: 'right', x: '3%', y: '52%', w: 18, rot: -40, o: 0.45 },
     { pos: 'right', x: '8%', y: '72%', w: 22, rot:  30, o: 0.38 },
     { pos: 'right', x: '4%', y: '88%', w: 19, rot: -10, o: 0.40 },
-    // Móvil: 2 por lado, más pequeños y pegados al borde
     { pos: 'left',  x: '1%', y: '30%', w: 13, rot:  20, o: 0.28, mobileOnly: true },
     { pos: 'left',  x: '1%', y: '65%', w: 11, rot: -10, o: 0.25, mobileOnly: true },
     { pos: 'right', x: '1%', y: '35%', w: 13, rot: -20, o: 0.28, mobileOnly: true },
@@ -279,13 +266,60 @@ function GalleryPetals() {
   );
 }
 
-// Sello circular interactivo (easter egg): se puede girar arrastrando.
-// Al soltarlo cerca del ángulo objetivo configurado en config.ts, revela una sorpresa.
+// ============ UTILIDAD DE SONIDO ============
+function playTone(freq: number, duration: number, type: OscillatorType = 'sine', volume: number = 0.3) {
+  try {
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+    setTimeout(() => ctx.close(), duration * 1000 + 100);
+  } catch (e) {}
+}
+
+function playStepSound(stepIndex: number) {
+  if (stepIndex === 0) playTone(880, 0.25, 'sine', 0.25);
+  else if (stepIndex === 1) playTone(660, 0.35, 'sine', 0.25);
+  else if (stepIndex === 2) {
+    playTone(523, 0.3, 'sine', 0.2);
+    setTimeout(() => playTone(659, 0.3, 'sine', 0.2), 150);
+    setTimeout(() => playTone(784, 0.4, 'sine', 0.25), 300);
+    setTimeout(() => playTone(1047, 0.6, 'sine', 0.2), 500);
+  }
+}
+
+function playUnlockSound() {
+  playTone(523, 0.2, 'sine', 0.2);
+  setTimeout(() => playTone(659, 0.2, 'sine', 0.2), 100);
+  setTimeout(() => playTone(784, 0.2, 'sine', 0.2), 200);
+  setTimeout(() => playTone(1047, 0.5, 'sine', 0.25), 300);
+  setTimeout(() => playTone(1319, 0.8, 'sine', 0.2), 500);
+}
+
 function LetterSeal({ cfg, onUnlock }: { cfg: typeof CONFIG; onUnlock: () => void }) {
   const [angle, setAngle] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [stepProgress, setStepProgress] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [showHint, setShowHint] = useState<string | null>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const draggingRef = useRef(false);
   const sealRef = useRef<HTMLDivElement | null>(null);
   const unlockedRef = useRef(false);
+  const holdStartRef = useRef<number | null>(null);
+  const delayStartRef = useRef<number | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const delayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const steps = cfg.easterEgg.sealSteps;
 
   const angleFromPointer = useCallback((clientX: number, clientY: number) => {
     const el = sealRef.current;
@@ -299,31 +333,89 @@ function LetterSeal({ cfg, onUnlock }: { cfg: typeof CONFIG; onUnlock: () => voi
     return deg;
   }, []);
 
-  const checkUnlock = useCallback((current: number) => {
-    if (!cfg.easterEgg.enabled || unlockedRef.current) return;
-    const target = ((cfg.easterEgg.targetAngle % 360) + 360) % 360;
-    const tolerance = cfg.easterEgg.toleranceDeg;
-    let diff = Math.abs(current - target);
+  const normalizeAngle = (a: number) => ((a % 360) + 360) % 360;
+
+  const angleDiff = (a: number, b: number) => {
+    let diff = Math.abs(normalizeAngle(a) - normalizeAngle(b));
     if (diff > 180) diff = 360 - diff;
-    if (diff <= tolerance) {
-      unlockedRef.current = true;
-      onUnlock();
+    return diff;
+  };
+
+  const clearHoldTimer = useCallback(() => {
+    if (holdTimerRef.current) {
+      clearInterval(holdTimerRef.current);
+      holdTimerRef.current = null;
     }
-  }, [cfg.easterEgg.enabled, cfg.easterEgg.targetAngle, cfg.easterEgg.toleranceDeg, onUnlock]);
+    if (delayTimerRef.current) {
+      clearTimeout(delayTimerRef.current);
+      delayTimerRef.current = null;
+    }
+    holdStartRef.current = null;
+    delayStartRef.current = null;
+    setStepProgress(0);
+  }, []);
+
+  const completeStep = useCallback((stepIndex: number) => {
+    playStepSound(stepIndex);
+    setCompletedSteps(prev => [...prev, stepIndex]);
+    setShowHint(steps[stepIndex].hintText || null);
+    setTimeout(() => setShowHint(null), 3000);
+    
+    if (stepIndex === steps.length - 1) {
+      unlockedRef.current = true;
+      playUnlockSound();
+      setTimeout(() => onUnlock(), 800);
+    } else {
+      setCurrentStep(stepIndex + 1);
+    }
+  }, [steps, onUnlock]);
+
+  const checkStep = useCallback((currentAngle: number) => {
+    if (!cfg.easterEgg.enabled || unlockedRef.current) return;
+    if (currentStep >= steps.length) return;
+
+    const step = steps[currentStep];
+    const diff = angleDiff(currentAngle, step.targetAngle);
+
+    if (diff <= step.toleranceDeg) {
+      if (delayStartRef.current === null && holdStartRef.current === null) {
+        delayStartRef.current = Date.now();
+        delayTimerRef.current = setTimeout(() => {
+          delayStartRef.current = null;
+          holdStartRef.current = Date.now();
+          holdTimerRef.current = setInterval(() => {
+            const elapsed = (Date.now() - (holdStartRef.current || 0)) / 1000;
+            const progress = Math.min(100, (elapsed / step.holdSeconds) * 100);
+            setStepProgress(progress);
+            
+            if (elapsed >= step.holdSeconds) {
+              clearHoldTimer();
+              completeStep(currentStep);
+            }
+          }, 50);
+        }, 1500);
+      }
+    } else {
+      clearHoldTimer();
+    }
+  }, [cfg.easterEgg.enabled, steps, currentStep, clearHoldTimer, completeStep]);
 
   const handleMove = useCallback((clientX: number, clientY: number) => {
     if (!draggingRef.current) return;
     const deg = angleFromPointer(clientX, clientY);
     setAngle(deg);
-    checkUnlock(deg);
-  }, [angleFromPointer, checkUnlock]);
+    checkStep(deg);
+  }, [angleFromPointer, checkStep]);
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length > 0) handleMove(e.touches[0].clientX, e.touches[0].clientY);
     };
-    const stopDrag = () => { draggingRef.current = false; };
+    const stopDrag = () => { 
+      draggingRef.current = false; 
+      clearHoldTimer();
+    };
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('touchmove', onTouchMove);
     window.addEventListener('mouseup', stopDrag);
@@ -333,32 +425,130 @@ function LetterSeal({ cfg, onUnlock }: { cfg: typeof CONFIG; onUnlock: () => voi
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('mouseup', stopDrag);
       window.removeEventListener('touchend', stopDrag);
+      clearHoldTimer();
     };
-  }, [handleMove]);
+  }, [handleMove, clearHoldTimer]);
 
-  const startDrag = () => { draggingRef.current = true; };
+  const startDrag = () => { 
+    if (!hasInteracted) setHasInteracted(true);
+    draggingRef.current = true; 
+    clearHoldTimer();
+  };
+
+  const stepLabels = ["J₁", "J₂", "J&J"];
+  const stepColors = ["#E8A598", "#B39DDB", "#FFFDFD"];
 
   return (
     <div className="flex flex-col items-center mt-5">
+      {/* Solo visible después del primer toque */}
+      {hasInteracted && (
+        <>
+          {/* Indicadores de pasos */}
+          <div className="flex items-center gap-2 mb-3">
+            {steps.map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div 
+                  className="w-5 h-5 rounded-full border flex items-center justify-center text-[8px] font-mono transition-all duration-300"
+                  style={{
+                    borderColor: completedSteps.includes(i) ? stepColors[i] : 'rgba(100,54,71,0.4)',
+                    backgroundColor: completedSteps.includes(i) ? `${stepColors[i]}20` : 'transparent',
+                    color: completedSteps.includes(i) ? stepColors[i] : '#62464D',
+                  }}
+                >
+                  {stepLabels[i]}
+                </div>
+                {i < steps.length - 1 && (
+                  <div 
+                    className="w-4 h-[1px] transition-all duration-500"
+                    style={{
+                      backgroundColor: completedSteps.includes(i) ? stepColors[i] : 'rgba(78,49,60,0.3)',
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Barra de progreso del hold actual */}
+          {currentStep < steps.length && !unlockedRef.current && (
+            <div className="w-10 h-[2px] bg-[#4E313C]/30 rounded-full mb-2 overflow-hidden relative">
+              {delayStartRef.current !== null && holdStartRef.current === null && (
+                <div 
+                className="absolute inset-0 rounded-full"
+                style={{ 
+                  backgroundColor: stepColors[currentStep],
+                  opacity: 0.15,
+                  animation: 'subtle-pulse 1.5s ease-in-out infinite',
+                }}
+              />
+              )}
+              <div 
+                className="h-full rounded-full transition-all duration-100"
+                style={{ 
+                  width: `${stepProgress}%`,
+                  backgroundColor: stepColors[currentStep],
+                  opacity: 0.7,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Pista flotante al completar paso */}
+          {showHint && (
+            <div className="text-[9px] font-mono tracking-wider text-[#E8A598]/80 mb-2 animate-pulse">
+              {showHint}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Sello circular — siempre visible */}
       <div
         ref={sealRef}
         onMouseDown={startDrag}
         onTouchStart={startDrag}
-        className="w-10 h-10 rounded-full border flex items-center justify-center select-none"
+        className="w-10 h-10 rounded-full border flex items-center justify-center select-none relative"
         style={{
-          borderColor: 'rgb(100, 54, 71)',
+          borderColor: unlockedRef.current ? 'rgba(232,165,152,0.6)' : 'rgb(100, 54, 71)',
           opacity: 0.7,
           transform: `rotate(${angle}deg)`,
           cursor: cfg.easterEgg.enabled ? 'grab' : 'default',
           touchAction: 'none',
+          boxShadow: unlockedRef.current ? '0 0 15px rgba(232,165,152,0.3)' : 'none',
         }}>
         <span className="text-[9px] font-mono tracking-widest" style={{ color: 'rgb(122, 108, 113)' }}>J & J</span>
+        {/* Punto indicador de dirección — solo después del primer toque */}
+        {hasInteracted && (
+          <div 
+            className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full"
+            style={{ 
+              backgroundColor: stepColors[currentStep] || '#E8A598',
+              opacity: 0.8,
+            }}
+          />
+        )}
       </div>
+
+      {/* Texto guía — solo después del primer toque */}
+      {hasInteracted && !unlockedRef.current && currentStep < steps.length && (
+        <p className="text-[7px] font-mono tracking-widest text-[#62464D]/60 mt-2 uppercase">
+          {currentStep === 0 && "En veces recordar el inicio es la clave"}
+          {currentStep === 1 && "¿Recuerdas cuándo todo floreció?"}
+          {currentStep === 2 && "Nuestra futura familia de locos son sabios"}
+        </p>
+      )}
+      
+      {unlockedRef.current && (
+        setTimeout(() => {
+          <p className="text-[8px] font-mono tracking-widest text-[#E8A598] mt-2 uppercase animate-pulse">
+            ✨ Secreto desbloqueado ✨
+          </p>
+        }, 2500)
+      )}
     </div>
   );
 }
 
-// Anillos shimmer animados en la ruleta
 function RouletteShimmer() {
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style={{ zIndex: 1 }} aria-hidden="true">
@@ -372,27 +562,22 @@ function RouletteShimmer() {
   );
 }
 
-// Puntos suaves bokeh a los costados del "Refugio de tu Risa"
 function SmileSliderDecor() {
   const dots = [
-    // Izquierda, columna exterior
     { cx: '8%',   cy: '18%', r: 3.5, o: 0.15 },
     { cx: '10%',  cy: '36%', r: 2.0, o: 0.11 },
     { cx: '7%',   cy: '54%', r: 4.5, o: 0.13 },
     { cx: '11%',  cy: '70%', r: 2.5, o: 0.12 },
     { cx: '9%',   cy: '84%', r: 3.0, o: 0.14 },
-    // Izquierda, columna interior
     { cx: '16%',  cy: '26%', r: 2.0, o: 0.08 },
     { cx: '17%',  cy: '46%', r: 3.0, o: 0.10 },
     { cx: '15%',  cy: '64%', r: 2.0, o: 0.08 },
     { cx: '17%',  cy: '78%', r: 2.5, o: 0.09 },
-    // Derecha, columna exterior
     { cx: '92%',  cy: '18%', r: 3.5, o: 0.15 },
     { cx: '90%',  cy: '36%', r: 2.0, o: 0.11 },
     { cx: '93%',  cy: '54%', r: 4.5, o: 0.13 },
     { cx: '89%',  cy: '70%', r: 2.5, o: 0.12 },
     { cx: '91%',  cy: '84%', r: 3.0, o: 0.14 },
-    // Derecha, columna interior
     { cx: '84%',  cy: '26%', r: 2.0, o: 0.08 },
     { cx: '83%',  cy: '46%', r: 3.0, o: 0.10 },
     { cx: '85%',  cy: '64%', r: 2.0, o: 0.08 },
@@ -408,7 +593,6 @@ function SmileSliderDecor() {
   );
 }
 
-// Ruta punteada con nodos de diamante a los costados de "Nuestra Escapada Favorita"
 function BusetaDecor() {
   const SidePath = ({ flip }: { flip?: boolean }) => (
     <svg
@@ -419,16 +603,13 @@ function BusetaDecor() {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      {/* Línea de ruta punteada */}
       <line x1="26" y1="120" x2="26" y2="880"
         stroke="rgba(78,49,60,0.18)" strokeWidth="1"
         strokeDasharray="2 18" strokeLinecap="round" />
-      {/* Nodos de ruta en forma de diamante */}
       {[220, 370, 500, 630, 780].map((y, i) => (
         <rect key={i} x={22.5} y={y - 4.5} width={7} height={7}
           fill="rgba(78,49,60,0.22)" transform={`rotate(45 26 ${y})`} rx="0.5" />
       ))}
-      {/* Puntos de inicio y fin */}
       <circle cx="26" cy="120" r="2.5" fill="rgba(78,49,60,0.20)" />
       <circle cx="26" cy="880" r="2.5" fill="rgba(78,49,60,0.20)" />
     </svg>
@@ -441,7 +622,49 @@ function BusetaDecor() {
   );
 } 
 
-// PANTALLA DE INTRO CINEMATOGRÁFICA
+// PISTAS ESCONDIDAS
+function HiddenHint({ hint }: { hint: { text: string; style: string } }) {
+  if (hint.style === 'micro') {
+    return (
+      <span className="text-[6px] font-mono tracking-[0.4em] text-[#4E313C]/40 uppercase select-none" aria-hidden="true">
+        {hint.text}
+      </span>
+    );
+  }
+  if (hint.style === 'coords') {
+    return (
+      <span className="text-[8px] font-mono tracking-widest text-[#62464D]/50 uppercase select-none" aria-hidden="true">
+        {hint.text}
+      </span>
+    );
+  }
+  if (hint.style === 'symbol') {
+    return (
+      <span className="text-[9px] font-mono tracking-[0.3em] text-[#62464D]/45 uppercase select-none" aria-hidden="true">
+        {hint.text}
+      </span>
+    );
+  }
+  if (hint.style === 'acrostic') {
+    return (
+      <span className="text-[10px] font-serif italic text-[#62464D]/40 select-none" aria-hidden="true">
+        {hint.text}
+      </span>
+    );
+  }
+  // subtle
+  return (
+    <span className="text-[8px] font-mono tracking-widest text-[#62464D]/35 uppercase select-none" aria-hidden="true">
+      {hint.text}
+    </span>
+  );
+}
+
+// Helper para obtener pistas por ubicación
+function getHintsForLocation(location: string, hints: typeof CONFIG.hiddenHints) {
+  return hints.filter(h => h.location === location);
+}
+
 const INTRO_STEPS = [
   { text: null, sub: null, duration: 1200 },
   { text: 'Para ti.', sub: null, duration: 1400 },
@@ -532,26 +755,39 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
   );
 }
 
-// Saludo flotante grande que aparece justo después de la intro (no bloquea la carga
-// de la página: el contenido principal ya está montado/visible debajo). Se encoge
-// y sube hasta quedar como una etiqueta pequeña permanente, anclada justo encima
-// del bloque "Felices X meses" de la Sección 0.
-function GreetingPopup({ text, shrink }: { text: string; shrink: boolean }) {
+function GreetingPopup({ text, shrink, targetTop }: { text: string; shrink: boolean; targetTop: number | null }) {
+  const top = targetTop ?? 84;
   return (
     <div className="fixed inset-0 z-[70] flex items-start justify-center pointer-events-none px-8" aria-hidden="true">
-      <p
-        className="font-serif font-light text-[#E8A598] text-center select-none"
+      <div
+        className="relative text-center select-none"
         style={{
-          marginTop: shrink ? '84px' : '42vh',
-          fontSize: shrink ? '10px' : 'clamp(28px, 6vw, 48px)',
-          letterSpacing: shrink ? '0.3em' : '0px',
-          textTransform: shrink ? 'uppercase' : 'none',
-          opacity: shrink ? 0.85 : 1,
-          transition: 'margin-top 900ms cubic-bezier(0.4,0,0.2,1), font-size 900ms cubic-bezier(0.4,0,0.2,1), letter-spacing 900ms ease, opacity 900ms ease',
+          marginTop: shrink ? `${top}px` : '42vh',
+          transition: 'margin-top 900ms cubic-bezier(0.4,0,0.2,1)',
         }}
       >
-        {text}
-      </p>
+        <p
+          className="font-serif font-light text-[#E8A598] whitespace-nowrap"
+          style={{
+            fontSize: 'clamp(28px, 6vw, 48px)',
+            opacity: shrink ? 0 : 1,
+            transform: shrink ? 'scale(0.55)' : 'scale(1)',
+            transition: 'opacity 500ms ease, transform 900ms cubic-bezier(0.4,0,0.2,1)',
+          }}
+        >
+          {text}
+        </p>
+        <p
+          className="absolute inset-0 flex items-center justify-center font-mono tracking-[0.3em] text-[#E8A598]/80 uppercase whitespace-nowrap"
+          style={{
+            fontSize: '10px',
+            opacity: shrink ? 1 : 0,
+            transition: 'opacity 500ms ease 350ms',
+          }}
+        >
+          {text}
+        </p>
+      </div>
     </div>
   );
 }
@@ -567,7 +803,6 @@ function AmbientLights() {
   );
 }
 
-// Botón flotante para controlar la música de fondo en loop
 function BackgroundMusicPlayer({ cfg }: { cfg: typeof CONFIG }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -584,9 +819,7 @@ function BackgroundMusicPlayer({ cfg }: { cfg: typeof CONFIG }) {
     setTriedAutoplay(true);
     const audio = audioRef.current;
     if (!audio) return;
-    audio.play().then(() => setIsPlaying(true)).catch(() => {
-      // El navegador bloqueó el autoplay sin interacción previa; el botón queda disponible manualmente.
-    });
+    audio.play().then(() => setIsPlaying(true)).catch(() => {});
   }, [cfg.backgroundMusic.autoplay, triedAutoplay]);
 
   const toggle = () => {
@@ -663,9 +896,6 @@ function SideDecoration({ side }: { side: 'left' | 'right' }) {
   );
 }
 
-// Sección compacta del contador hacia el próximo hito (mes/año), separada del
-// footer legal. Vive como su propia sección al final del recorrido, igual que
-// Buseta o el árbol Sakura, pero deliberadamente pequeña y poco voluminosa.
 function NextMilestoneSection({ anniversaryDate }: { anniversaryDate: string }) {
   const { daysLeft, nextLabel } = getNextMilestone(anniversaryDate);
   if (daysLeft <= 0) return null;
@@ -751,7 +981,7 @@ function downloadLetter(cfg: typeof CONFIG) {
     ctx.scale(tScale, tScale);
     const tp = (d: string, fill: string, alpha = 1) => {
       ctx.save();
-      ctx.globalAlpha *= alpha; // escala relativa al globalAlpha exterior (0.22 ó 0.18)
+      ctx.globalAlpha *= alpha;
       ctx.fillStyle = fill;
       ctx.fill(new Path2D(d));
       ctx.restore();
@@ -850,7 +1080,6 @@ function downloadLetter(cfg: typeof CONFIG) {
     ctx.fillStyle = '#4E313C';
     ctx.fillRect(cx - 30, y, 60, 1);
 
-    // SELLO EN EL PNG
     if (cfg.decorations.letterSeal) {
       y += lineH * 1.8;
       const sealR = 16;
@@ -886,9 +1115,12 @@ function downloadLetter(cfg: typeof CONFIG) {
   }
 }
 
-// Navegación simple basada en hash para el easter egg (sin depender de react-router)
 function navigateToSecret() {
   window.location.hash = '#secreto';
+}
+
+function navigateToLetter() {
+  window.location.hash = '#letter';
 }
 
 function navigateHome() {
@@ -905,8 +1137,20 @@ function useIsSecretRoute(): boolean {
   return isSecret;
 }
 
-// Página secreta revelada por el easter egg del sello
+// ============ PÁGINA SECRETA ============
+// Ahora regresa a la sección de la carta en lugar de solo limpiar el hash
 function SecretPage({ cfg }: { cfg: typeof CONFIG }) {
+  const handleReturn = () => {
+    navigateHome();
+    // Scroll a la sección de la carta después de que el hash se limpie
+    setTimeout(() => {
+      const letterSection = document.getElementById('letter-section');
+      if (letterSection) {
+        letterSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 150);
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0A0608] overflow-y-auto px-6 py-12">
       <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{
@@ -940,10 +1184,10 @@ function SecretPage({ cfg }: { cfg: typeof CONFIG }) {
           {cfg.easterEgg.surpriseMessage.map((paragraph, i) => (<p key={i}>{paragraph}</p>))}
         </div>
 
-        <button type="button" onClick={navigateHome}
+        <button type="button" onClick={handleReturn}
           className="mt-2 px-8 py-3 rounded-full bg-[#E8A598]/10 border border-[#E8A598]/30 text-[#E8A598] font-serif text-sm tracking-wide hover:bg-[#E8A598]/20 hover:border-[#E8A598]/50 transition-all duration-300 flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
-          Volver
+          Volver a la carta
         </button>
       </div>
     </div>
@@ -956,15 +1200,26 @@ export default function App() {
   const [showGreetingPopup, setShowGreetingPopup] = useState(false);
   const [greetingShrink, setGreetingShrink] = useState(false);
   const [greetingDocked, setGreetingDocked] = useState(false);
+  const [dockTargetTop, setDockTargetTop] = useState<number | null>(null);
+  const dockAnchorRef = useRef<HTMLParagraphElement>(null);
   const isSecretRoute = useIsSecretRoute();
 
   const monthsElapsed = getMonthsElapsed(CONFIG.anniversaryDate);
   const hasReached3Months = monthsElapsed >= 3;
   const greetingText = CONFIG.greetings.enabled ? getTimeOfDayGreeting(CONFIG) : null;
+  const heroReady = !greetingText || greetingDocked;
 
-  // El saludo aparece grande justo después de que termina la intro, sin bloquear
-  // el montaje/carga del resto de la página (que ya está visible debajo). Luego
-  // se encoge y queda fijo como etiqueta pequeña sobre el "Felices X meses".
+  useEffect(() => {
+    function measure() {
+      if (dockAnchorRef.current) {
+        setDockTargetTop(dockAnchorRef.current.getBoundingClientRect().top);
+      }
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
   useEffect(() => {
     if (!introComplete || !greetingText) return;
     setShowGreetingPopup(true);
@@ -987,8 +1242,22 @@ export default function App() {
     return <SecretPage cfg={CONFIG} />;
   }
 
+  const scrollBlocked = !introComplete || !!(greetingText && !greetingDocked);
+
   return (
     <>
+      {scrollBlocked && (
+        <div 
+          className="fixed inset-0 z-[60]"
+          style={{ 
+            overscrollBehavior: 'none',
+            touchAction: 'none',
+          }}
+          onWheel={(e) => e.preventDefault()}
+          onTouchMove={(e) => e.preventDefault()}
+        />
+      )}
+
       {!introComplete && (
         <CinematicIntro
           onReveal={() => setContentVisible(true)}
@@ -998,7 +1267,7 @@ export default function App() {
       )}
 
       {showGreetingPopup && greetingText && (
-        <GreetingPopup text={greetingText} shrink={greetingShrink} />
+        <GreetingPopup text={greetingText} shrink={greetingShrink} targetTop={dockTargetTop} />
       )}
 
       <div className="w-full h-[100dvh] overflow-y-auto snap-y snap-mandatory scroll-smooth bg-[#130D0F] text-[#EDE7E5] font-serif hide-scrollbar relative"
@@ -1031,7 +1300,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* SECCIÓN 0: Intro de la página */}
+        {/* SECCIÓN 0: Hero */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(ellipse 55% 45% at 50% 52%, rgba(232,165,152,0.10) 0%, transparent 65%)' }} />
@@ -1045,11 +1314,24 @@ export default function App() {
           </svg>
 
           <div className="relative z-10 flex flex-col items-center text-center gap-5 max-w-lg">
-            {greetingDocked && greetingText && (
-              <p className="text-[10px] sm:text-[11px] font-mono tracking-[0.3em] text-[#E8A598]/80 uppercase greeting-dock-in">
+            {greetingText && (
+              <p
+                ref={dockAnchorRef}
+                className="text-[10px] sm:text-[11px] font-mono tracking-[0.3em] text-[#E8A598]/80 uppercase"
+                style={{ opacity: greetingDocked ? 1 : 0, transition: 'opacity 500ms ease' }}
+              >
                 {greetingText}
               </p>
             )}
+            <div
+              className="flex flex-col items-center gap-5"
+              style={{
+                opacity: heroReady ? 1 : 0,
+                transform: heroReady ? 'translateY(0)' : 'translateY(18px)',
+                transition: 'opacity 700ms cubic-bezier(0.4,0,0.2,1), transform 700ms cubic-bezier(0.4,0,0.2,1)',
+                pointerEvents: heroReady ? 'auto' : 'none',
+              }}
+            >
             <FadeInSection direction="up" delay={100}>
               <span className="text-[9px] font-mono tracking-[0.35em] text-[#62464D] uppercase block">
                 {new Date(CONFIG.anniversaryDate).toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -1092,10 +1374,18 @@ export default function App() {
                 </p>
               </div>
             </FadeInSection>
+            </div>
+          </div>
+          
+          {/* Pista escondida en hero */}
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
+            {getHintsForLocation('hero', CONFIG.hiddenHints).map((h, i) => (
+              <HiddenHint key={i} hint={h} />
+            ))}
           </div>
         </section>
 
-        {/* SECCIÓN: Línea de tiempo de la relación — antes del árbol, pensada para crecer con los años */}
+        {/* Timeline */}
         {CONFIG.decorations.coverTimeline && (
           <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none"
@@ -1122,9 +1412,16 @@ export default function App() {
               <SakuraTree startDate={CONFIG.anniversaryDate} treeConfig={CONFIG.sakuraTree} />
             </FadeInSection>
           </div>
+          
+          {/* Pista escondida en árbol */}
+          <div className="absolute bottom-70 right-5 -translate-x-1/2">
+            {getHintsForLocation('tree', CONFIG.hiddenHints).map((h, i) => (
+              <HiddenHint key={i} hint={h} />
+            ))}
+          </div>
         </section>
 
-        {/*SmileSlider */}
+        {/* SmileSlider */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           {CONFIG.decorations.smileSliderDecor && <SmileSliderDecor />}
           <div className="w-full max-w-xl max-h-[82vh] flex flex-col items-center justify-center gap-y-6">
@@ -1141,9 +1438,16 @@ export default function App() {
               <SmileSlider />
             </FadeInSection>
           </div>
+          
+          {/* Pista escondida en smile slider */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+            {getHintsForLocation('smile', CONFIG.hiddenHints).map((h, i) => (
+              <HiddenHint key={i} hint={h} />
+            ))}
+          </div>
         </section>
 
-        {/*Buseta */}
+        {/* Buseta */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           {CONFIG.decorations.busetaDecor && <BusetaDecor />}
           <div className="w-full max-w-2xl max-h-[85vh] flex flex-col items-center justify-center gap-y-4">
@@ -1160,7 +1464,15 @@ export default function App() {
               <Buseta buseta={CONFIG.buseta} />
             </FadeInSection>
           </div>
+          
+          {/* Pista escondida en buseta */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+            {getHintsForLocation('buseta', CONFIG.hiddenHints).map((h, i) => (
+              <HiddenHint key={i} hint={h} />
+            ))}
+          </div>
         </section>
+
         {/* Galería */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none"
@@ -1173,7 +1485,6 @@ export default function App() {
           
           {CONFIG.decorations.galleryPetals && <GalleryPetals />}
 
-          {/* Contenido principal con z-index alto */}
           <div className="w-full max-w-lg max-h-[82vh] flex flex-col items-center justify-center gap-y-14 sm:gap-y-10 relative z-10">
             <FadeInSection direction="down" delay={0}>
               <div className="text-center space-y-1">
@@ -1188,10 +1499,17 @@ export default function App() {
               <Gallery photos={CONFIG.photos} />
             </FadeInSection>
           </div>
+          
+          {/* Pista escondida en galería */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+            {getHintsForLocation('gallery', CONFIG.hiddenHints).map((h, i) => (
+              <HiddenHint key={i} hint={h} />
+            ))}
+          </div>
         </section>
 
         {/* Carta */}
-        <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+        <section id="letter-section" className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
@@ -1273,7 +1591,14 @@ export default function App() {
                   )}
                 </div>
               </FadeInSection>
-              {/* ─── DECORACIÓN 5: Sello circular (easter egg) ─── */}
+              
+              {/* Pista escondida en carta */}
+              <div className="mt-3 flex justify-center">
+                {getHintsForLocation('letter', CONFIG.hiddenHints).map((h, i) => (
+                  <HiddenHint key={i} hint={h} />
+                ))}
+              </div>
+              
               {CONFIG.decorations.letterSeal && (
                 <LetterSeal cfg={CONFIG} onUnlock={() => navigateToSecret()} />
               )}
@@ -1312,9 +1637,47 @@ export default function App() {
               />
             </FadeInSection>
           </div>
+          
+          {/* Pista escondida en ruleta */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+            {getHintsForLocation('roulette', CONFIG.hiddenHints).map((h, i) => (
+              <HiddenHint key={i} hint={h} />
+            ))}
+          </div>
         </section>
 
-        <NextMilestoneSection anniversaryDate={CONFIG.anniversaryDate} />
+        <section className="w-full min-h-[42vh] sm:min-h-[38vh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden py-10">
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse 45% 50% at 50% 50%, rgba(232,165,152,0.08) 0%, transparent 70%)' }} />
+          <FadeInSection direction="up" delay={0}>
+            <div className="flex flex-col items-center gap-2.5 px-8 sm:px-10 py-6 rounded-2xl border border-[#4E313C]/30 bg-[#1C1216]/40 backdrop-blur-sm">
+              <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" style={{ opacity: 0.55 }}>
+                <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+                <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+                <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+                <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+                <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
+              </svg>
+              <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase">Próximo capítulo</span>
+              <p className="text-3xl sm:text-4xl font-serif font-bold text-[#FFFDFD] leading-none">{(() => {
+                const { daysLeft, nextLabel } = getNextMilestone(CONFIG.anniversaryDate);
+                return daysLeft;
+              })()}</p>
+              <p className="text-xs sm:text-sm font-serif italic text-[#E8A598]">
+                {(() => {
+                  const { daysLeft, nextLabel } = getNextMilestone(CONFIG.anniversaryDate);
+                  return `${daysLeft === 1 ? 'día' : 'días'} para los ${nextLabel}`;
+                })()}
+              </p>
+            </div>
+          </FadeInSection>
+          {/* Pista escondida en milestone */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+            {getHintsForLocation('milestone', CONFIG.hiddenHints).map((h, i) => (
+              <HiddenHint key={i} hint={h} />
+            ))}
+          </div>
+        </section>
 
         <footer className="w-full min-h-[64px] flex flex-col items-center justify-center text-center gap-1.5 shrink-0 snap-start snap-always bg-[#130D0F] py-3"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
@@ -1326,10 +1689,15 @@ export default function App() {
               {CONFIG.easterEgg.hintText}
             </p>
           )}
+          {/* Pista escondida en footer */}
+          <div className="mt-1">
+            {getHintsForLocation('footer', CONFIG.hiddenHints).map((h, i) => (
+              <HiddenHint key={i} hint={h} />
+            ))}
+          </div>
         </footer>
       </div>
 
-      {/* Keyframes globales para animaciones de decoraciones */}
       <style>{`
         @keyframes twinkle {
           0% { opacity: 0.3; }
@@ -1347,12 +1715,15 @@ export default function App() {
           0%, 100% { transform: translateY(0); opacity: 0.5; }
           50% { transform: translateY(6px); opacity: 1; }
         }
-        @keyframes greeting-dock-in {
-          0% { opacity: 0; transform: translateY(-6px); }
-          100% { opacity: 1; transform: translateY(0); }
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateY(-4px); }
+          15% { opacity: 1; transform: translateY(0); }
+          85% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-4px); }
         }
-        .greeting-dock-in {
-          animation: greeting-dock-in 700ms cubic-bezier(0.4,0,0.2,1) both;
+        @keyframes subtle-pulse {
+          0%, 100% { opacity: 0.08; }
+          50% { opacity: 0.1; }
         }
       `}</style>
     </>
