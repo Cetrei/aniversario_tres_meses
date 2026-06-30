@@ -193,6 +193,10 @@ export interface DecorationsConfig {
   letterSeal: boolean;
   /** Anillos concéntricos animados detrás de la ruleta (Sección 6). Un solo anillo en móvil, dos en sm+. */
   rouletteShimmer: boolean;
+  /** Puntos suaves flotantes a los costados del "Refugio de tu Risa" (Sección 2). Ocultos en móvil. */
+  smileSliderDecor: boolean;
+  /** Ruta punteada con nodos de diamante a los costados de "Nuestra Escapada Favorita" (Sección 3). Oculta en móvil. */
+  busetaDecor: boolean;
 }
 
 export interface CoupleConfig {
@@ -271,7 +275,7 @@ export const CONFIG: CoupleConfig = {
     to: "Mamor 💗",
   },
 
-  anniversaryDate: "2026-04-01T00:00:00",
+  anniversaryDate: "2020-03-01T00:00:00",
 
 "loveLetter": {
     "place": "San José, 28 de junio de 2026",
@@ -476,10 +480,10 @@ export const CONFIG: CoupleConfig = {
   ],
 
   timelineMilestones: [
-    //{ date: "2019-03-01", label: "Nos conocimos la primera vez" },
-    //{ date: "2022-05-01", label: "Empezamos a hablar" },
-    //{ date: "2025-04-01", label: "Volvimos a ser más cercanos" },
-    //{ date: "2026-04-1", label: "Empezamos nuestra como marinovios" },
+    { date: "2019-03-01", label: "Nos conocimos la primera vez" },
+    { date: "2022-05-01", label: "Empezamos a hablar" },
+    { date: "2025-04-01", label: "Volvimos a ser más cercanos" },
+    { date: "2026-04-1", label: "Empezamos como marinovios" },
   ],
 
   decorations: {
@@ -489,5 +493,7 @@ export const CONFIG: CoupleConfig = {
     galleryPetals: true,
     letterSeal: true,
     rouletteShimmer: true,
+    smileSliderDecor: true,
+    busetaDecor: true,
   },
 };

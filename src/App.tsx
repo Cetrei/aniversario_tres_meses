@@ -132,22 +132,26 @@ function WaitingScreen({ startDate }: { startDate: string }) {
 
 // Línea de tiempo vertical en portada
 function CoverTimeline({ milestones }: { milestones: { date: string; label: string }[] }) {
-  const start = new Date(CONFIG.anniversaryDate);
-  const totalSpan = Date.now() - start.getTime();
+  // Usa la fecha más antigua de los hitos como origen para que todos quepan en el span
+  const firstMs = milestones.reduce(
+    (min, m) => Math.min(min, new Date(m.date).getTime()),
+    new Date(CONFIG.anniversaryDate).getTime(),
+  );
+  const totalSpan = Date.now() - firstMs;
 
   return (
-    <div className="hidden lg:flex flex-col items-center absolute right-[-60px] xl:right-[-80px] top-1/2 -translate-y-1/2 h-[70%] max-h-[360px] w-[80px]">
+    <div className="hidden lg:flex flex-col items-center absolute right-[-120] xl:right-[-150px] top-1/2 -translate-y-1/2 h-[70%] max-h-[360px] w-[80px]">
       <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-[#4E313C]/25 to-transparent" />
       {milestones.map((m, i) => {
         const mDate = new Date(m.date);
-        const elapsed = mDate.getTime() - start.getTime();
+        const elapsed = mDate.getTime() - firstMs;
         const position = Math.max(0, Math.min(1, elapsed / totalSpan));
         const isPast = mDate.getTime() <= Date.now();
         return (
           <div key={i} className="absolute flex items-center gap-2" style={{ top: `${position * 100}%`, transform: 'translateY(-50%)' }}>
             <div className={`w-[5px] h-[5px] rounded-full ${isPast ? 'bg-[#E8A598]/40' : 'bg-[#4E313C]/30'}`} />
             <span className={`text-[7px] font-mono tracking-[0.2em] uppercase whitespace-nowrap ${isPast ? 'text-[#8C7565]/60' : 'text-[#4E313C]/40'}`}>
-              {m.label}
+              {mDate.getFullYear() + " " + m.label}
             </span>
           </div>
         );
@@ -207,30 +211,56 @@ function LetterPaperGlow() {
 
 // Pétalos estáticos en la galería
 function GalleryPetals() {
-  // Solo en los bordes laterales, fuera del polaroid (~max-w-lg = 512px centrado)
-  const petals = [
-    // Lado izquierdo
-    { x: '2%', y: '15%', size: 22, rot: 25, o: 0.45 },
-    { x: '6%', y: '35%', size: 18, rot: -15, o: 0.38 },
-    { x: '3%', y: '55%', size: 24, rot: 40, o: 0.42 },
-    { x: '8%', y: '75%', size: 20, rot: -30, o: 0.35 },
-    { x: '4%', y: '90%', size: 16, rot: 12, o: 0.40 },
-    // Lado derecho
-    { x: '98%', y: '12%', size: 20, rot: -20, o: 0.42 },
-    { x: '94%', y: '32%', size: 26, rot: 15, o: 0.35 },
-    { x: '97%', y: '52%', size: 18, rot: -40, o: 0.45 },
-    { x: '92%', y: '72%', size: 22, rot: 30, o: 0.38 },
-    { x: '96%', y: '88%', size: 19, rot: -10, o: 0.40 },
+  // Usamos divs CSS en vez de SVG translate() porque SVG no acepta % en transform
+  type PetalEntry = {
+    pos: 'left' | 'right';
+    x: string;
+    y: string;
+    w: number;
+    rot: number;
+    o: number;
+    mobileOnly?: boolean;
+  };
+  const petals: PetalEntry[] = [
+    // Lado izquierdo — sm+
+    { pos: 'left',  x: '2%', y: '15%', w: 22, rot:  25, o: 0.45 },
+    { pos: 'left',  x: '6%', y: '35%', w: 18, rot: -15, o: 0.38 },
+    { pos: 'left',  x: '3%', y: '55%', w: 24, rot:  40, o: 0.42 },
+    { pos: 'left',  x: '8%', y: '75%', w: 20, rot: -30, o: 0.35 },
+    { pos: 'left',  x: '4%', y: '90%', w: 16, rot:  12, o: 0.40 },
+    // Lado derecho — sm+
+    { pos: 'right', x: '2%', y: '12%', w: 20, rot: -20, o: 0.42 },
+    { pos: 'right', x: '6%', y: '32%', w: 26, rot:  15, o: 0.35 },
+    { pos: 'right', x: '3%', y: '52%', w: 18, rot: -40, o: 0.45 },
+    { pos: 'right', x: '8%', y: '72%', w: 22, rot:  30, o: 0.38 },
+    { pos: 'right', x: '4%', y: '88%', w: 19, rot: -10, o: 0.40 },
+    // Móvil: 2 por lado, más pequeños y pegados al borde
+    { pos: 'left',  x: '1%', y: '30%', w: 13, rot:  20, o: 0.28, mobileOnly: true },
+    { pos: 'left',  x: '1%', y: '65%', w: 11, rot: -10, o: 0.25, mobileOnly: true },
+    { pos: 'right', x: '1%', y: '35%', w: 13, rot: -20, o: 0.28, mobileOnly: true },
+    { pos: 'right', x: '1%', y: '70%', w: 11, rot:  10, o: 0.25, mobileOnly: true },
   ];
 
   return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 5 }} aria-hidden="true">
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }} aria-hidden="true">
       {petals.map((p, i) => (
-        <g key={i} transform={`translate(${p.x}, ${p.y}) rotate(${p.rot})`} opacity={p.o}>
-          <ellipse cx="0" cy="0" rx={p.size} ry={p.size * 0.6} fill="#E8A598" />
-        </g>
+        <div
+          key={i}
+          className={p.mobileOnly ? 'sm:hidden' : 'hidden sm:block'}
+          style={{
+            position: 'absolute',
+            [p.pos]: p.x,
+            top: p.y,
+            width: p.w,
+            height: Math.round(p.w * 0.6),
+            background: '#E8A598',
+            borderRadius: '50%',
+            transform: `translateY(-50%) rotate(${p.rot}deg)`,
+            opacity: p.o,
+          }}
+        />
       ))}
-    </svg>
+    </div>
   );
 }
 
@@ -257,6 +287,75 @@ function RouletteShimmer() {
       <circle cx="50%" cy="50%" r="35%" fill="none" stroke="rgba(78,49,60,0.22)" strokeWidth="1.5" strokeDasharray="8 6"
         className="sm:hidden" style={{ animation: 'spin-slow 20s linear infinite' }} />
     </svg>
+  );
+}
+
+// Puntos suaves bokeh a los costados del "Refugio de tu Risa"
+function SmileSliderDecor() {
+  const dots = [
+    // Izquierda, columna exterior
+    { cx: '8%',   cy: '18%', r: 3.5, o: 0.15 },
+    { cx: '10%',  cy: '36%', r: 2.0, o: 0.11 },
+    { cx: '7%',   cy: '54%', r: 4.5, o: 0.13 },
+    { cx: '11%',  cy: '70%', r: 2.5, o: 0.12 },
+    { cx: '9%',   cy: '84%', r: 3.0, o: 0.14 },
+    // Izquierda, columna interior
+    { cx: '16%',  cy: '26%', r: 2.0, o: 0.08 },
+    { cx: '17%',  cy: '46%', r: 3.0, o: 0.10 },
+    { cx: '15%',  cy: '64%', r: 2.0, o: 0.08 },
+    { cx: '17%',  cy: '78%', r: 2.5, o: 0.09 },
+    // Derecha, columna exterior
+    { cx: '92%',  cy: '18%', r: 3.5, o: 0.15 },
+    { cx: '90%',  cy: '36%', r: 2.0, o: 0.11 },
+    { cx: '93%',  cy: '54%', r: 4.5, o: 0.13 },
+    { cx: '89%',  cy: '70%', r: 2.5, o: 0.12 },
+    { cx: '91%',  cy: '84%', r: 3.0, o: 0.14 },
+    // Derecha, columna interior
+    { cx: '84%',  cy: '26%', r: 2.0, o: 0.08 },
+    { cx: '83%',  cy: '46%', r: 3.0, o: 0.10 },
+    { cx: '85%',  cy: '64%', r: 2.0, o: 0.08 },
+    { cx: '83%',  cy: '78%', r: 2.5, o: 0.09 },
+  ];
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none hidden sm:block"
+      style={{ zIndex: 1 }} aria-hidden="true">
+      {dots.map((d, i) => (
+        <circle key={i} cx={d.cx} cy={d.cy} r={d.r} fill={`rgba(232,165,152,${d.o})`} />
+      ))}
+    </svg>
+  );
+}
+
+// Ruta punteada con nodos de diamante a los costados de "Nuestra Escapada Favorita"
+function BusetaDecor() {
+  const SidePath = ({ flip }: { flip?: boolean }) => (
+    <svg
+      className="absolute top-0 h-full"
+      style={{ [flip ? 'right' : 'left']: '6%', ...(flip ? { transform: 'scaleX(-1)' } : {}) }}
+      width="52"
+      viewBox="0 0 52 1000"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      {/* Línea de ruta punteada */}
+      <line x1="26" y1="120" x2="26" y2="880"
+        stroke="rgba(78,49,60,0.18)" strokeWidth="1"
+        strokeDasharray="2 18" strokeLinecap="round" />
+      {/* Nodos de ruta en forma de diamante */}
+      {[220, 370, 500, 630, 780].map((y, i) => (
+        <rect key={i} x={22.5} y={y - 4.5} width={7} height={7}
+          fill="rgba(78,49,60,0.22)" transform={`rotate(45 26 ${y})`} rx="0.5" />
+      ))}
+      {/* Puntos de inicio y fin */}
+      <circle cx="26" cy="120" r="2.5" fill="rgba(78,49,60,0.20)" />
+      <circle cx="26" cy="880" r="2.5" fill="rgba(78,49,60,0.20)" />
+    </svg>
+  );
+  return (
+    <div className="absolute inset-0 pointer-events-none hidden sm:block" style={{ zIndex: 1 }}>
+      <SidePath />
+      <SidePath flip />
+    </div>
   );
 } 
 
@@ -432,7 +531,8 @@ function downloadLetter(cfg: typeof CONFIG) {
 
   const headerLines = 7;
   const footerLines = 3;
-  const H = (headerLines + wrappedBody.length + footerLines + 3) * lineH + 96;
+  const sealPad = cfg.decorations.letterSeal ? lineH * 4 : 0;
+  const H = (headerLines + wrappedBody.length + footerLines + 3) * lineH + 96 + sealPad;
   const canvasH = Math.max(H, 480);
 
   function renderToCanvas(sigImg: HTMLImageElement | null) {
@@ -460,10 +560,9 @@ function downloadLetter(cfg: typeof CONFIG) {
     ctx.scale(tScale, tScale);
     const tp = (d: string, fill: string, alpha = 1) => {
       ctx.save();
-      ctx.globalAlpha = alpha;
+      ctx.globalAlpha *= alpha; // escala relativa al globalAlpha exterior (0.22 ó 0.18)
       ctx.fillStyle = fill;
-      const p = new Path2D(d);
-      ctx.fill(p);
+      ctx.fill(new Path2D(d));
       ctx.restore();
     };
     const ts = (d: string, stroke: string, lw: number, lc2: CanvasLineCap = 'round') => {
@@ -562,19 +661,21 @@ function downloadLetter(cfg: typeof CONFIG) {
 
     // SELLO EN EL PNG
     if (cfg.decorations.letterSeal) {
-      y += lineH * 1.2;
+      y += lineH * 1.8;
+      const sealR = 16;
       ctx.save();
-      ctx.globalAlpha = 0.15;
-      ctx.strokeStyle = '#4E313C';
+      ctx.globalAlpha = 0.70;
+      ctx.strokeStyle = 'rgb(100,54,71)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(cx, y + 12, 14, 0, Math.PI * 2);
+      ctx.arc(cx, y + sealR, sealR, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.globalAlpha = 0.60;
       ctx.font = '8px monospace';
-      ctx.fillStyle = '#4E313C';
+      ctx.fillStyle = 'rgb(180,160,165)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('J & J', cx, y + 12);
+      ctx.fillText('J & J', cx, y + sealR);
       ctx.restore();
     }
 
@@ -726,6 +827,7 @@ export default function App() {
 
         {/*SmileSlider */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+          {CONFIG.decorations.smileSliderDecor && <SmileSliderDecor />}
           <div className="w-full max-w-xl max-h-[82vh] flex flex-col items-center justify-center gap-y-6">
             <FadeInSection direction="down" delay={0}>
               <div className="space-y-1 text-center">
@@ -744,6 +846,7 @@ export default function App() {
 
         {/*Buseta */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+          {CONFIG.decorations.busetaDecor && <BusetaDecor />}
           <div className="w-full max-w-2xl max-h-[85vh] flex flex-col items-center justify-center gap-y-4">
             <FadeInSection direction="down" delay={0}>
               <div className="text-center space-y-1">
