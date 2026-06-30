@@ -595,7 +595,7 @@ export const CONFIG: CoupleConfig = {
     // Paso 2: Segunda J (Jimena) → 27/2 → 27 grados, 2 segundos  
     // Paso 3: Ambas J al revés (locos) → 270 grados → desbloqueo
     sealSteps: [
-      { targetAngle: 3, holdSeconds: 5, toleranceDeg: 5, hintText: "El primero llegó el 3 del 5..." },
+      { targetAngle: 5, holdSeconds: 5, toleranceDeg: 1, hintText: "El primero llegó el 3 del 5..." },
       { targetAngle: 27, holdSeconds: 2, toleranceDeg: 5, hintText: "La segunda el 27 del 2..." },
       { targetAngle: 180, holdSeconds: 2, toleranceDeg: 5, hintText: "Ahora al revés, como loquitos 🙃" },
     ],
@@ -627,7 +627,7 @@ export const CONFIG: CoupleConfig = {
     // Ruleta - símbolos de ángulos
     { id: "roulette-1", text: "3 es un numero grandioso, no crees?", location: "roulette", style: "symbol" },
     // Milestone - micro
-    { id: "milestone-1", text: "Gira el sello como giran los cumpleaños", location: "milestone", style: "micro" },
+    { id: "milestone-1", text: "Gira el sello sin soltarlo conforme a los cumpleaños", location: "milestone", style: "micro" },
     // Footer - ya tiene el hint principal del easter egg
   ],
 };

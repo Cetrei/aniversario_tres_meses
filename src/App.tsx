@@ -305,7 +305,7 @@ function playUnlockSound() {
   setTimeout(() => playTone(1319, 0.8, 'sine', 0.2), 500);
 }
 
-function LetterSeal({ cfg, onUnlock }: { cfg: typeof CONFIG; onUnlock: () => void }) {
+function LetterSeal({ cfg, onUnlock, onDiscover }: { cfg: typeof CONFIG; onUnlock: () => void; onDiscover: () => void }) {
   const [angle, setAngle] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [stepProgress, setStepProgress] = useState(0);
@@ -430,7 +430,10 @@ function LetterSeal({ cfg, onUnlock }: { cfg: typeof CONFIG; onUnlock: () => voi
   }, [handleMove, clearHoldTimer]);
 
   const startDrag = () => { 
-    if (!hasInteracted) setHasInteracted(true);
+    if (!hasInteracted) {
+      setHasInteracted(true);
+      onDiscover();
+    }
     draggingRef.current = true; 
     clearHoldTimer();
   };
@@ -532,9 +535,9 @@ function LetterSeal({ cfg, onUnlock }: { cfg: typeof CONFIG; onUnlock: () => voi
       {/* Texto guía — solo después del primer toque */}
       {hasInteracted && !unlockedRef.current && currentStep < steps.length && (
         <p className="text-[7px] font-mono tracking-widest text-[#62464D]/60 mt-2 uppercase">
-          {currentStep === 0 && "En veces recordar el inicio es la clave"}
+          {currentStep === 0 && "En veces volver al inicio y recrear nuestros pasos es la clave"}
           {currentStep === 1 && "¿Recuerdas cuándo todo floreció?"}
-          {currentStep === 2 && "Nuestra futura familia de locos son sabios"}
+          {currentStep === 2 && "Nuestra futura familia de locos pueden saber algo"}
         </p>
       )}
       
@@ -623,10 +626,12 @@ function BusetaDecor() {
 } 
 
 // PISTAS ESCONDIDAS
-function HiddenHint({ hint }: { hint: { text: string; style: string } }) {
+function HiddenHint({ hint, visible }: { hint: { text: string; style: string }; visible: boolean }) {
+  if (!visible) return null;
+  
   if (hint.style === 'micro') {
     return (
-      <span className="text-[6px] font-mono tracking-[0.4em] text-[#4E313C]/40 uppercase select-none" aria-hidden="true">
+      <span className="text-[8px] font-mono tracking-[0.4em] text-[#4E313C]/40 uppercase select-none" aria-hidden="true">
         {hint.text}
       </span>
     );
@@ -1220,6 +1225,7 @@ export default function App() {
   const [dockTargetTop, setDockTargetTop] = useState<number | null>(null);
   const dockAnchorRef = useRef<HTMLParagraphElement>(null);
   const isSecretRoute = useIsSecretRoute();
+  const [hintsDiscovered, setHintsDiscovered] = useState(false);
 
   const handleStart = useCallback(() => {
     if (CONFIG.backgroundMusic.enabled && CONFIG.backgroundMusic.src && musicAudioRef.current) {
@@ -1421,7 +1427,7 @@ export default function App() {
           {/* Pista escondida en hero */}
           <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
             {getHintsForLocation('hero', CONFIG.hiddenHints).map((h, i) => (
-              <HiddenHint key={i} hint={h} />
+              <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
             ))}
           </div>
         </section>
@@ -1457,7 +1463,7 @@ export default function App() {
           {/* Pista escondida en árbol */}
           <div className="absolute bottom-70 right-5 -translate-x-1/2">
             {getHintsForLocation('tree', CONFIG.hiddenHints).map((h, i) => (
-              <HiddenHint key={i} hint={h} />
+              <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
             ))}
           </div>
         </section>
@@ -1483,7 +1489,7 @@ export default function App() {
           {/* Pista escondida en smile slider */}
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
             {getHintsForLocation('smile', CONFIG.hiddenHints).map((h, i) => (
-              <HiddenHint key={i} hint={h} />
+              <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
             ))}
           </div>
         </section>
@@ -1509,7 +1515,7 @@ export default function App() {
           {/* Pista escondida en buseta */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
             {getHintsForLocation('buseta', CONFIG.hiddenHints).map((h, i) => (
-              <HiddenHint key={i} hint={h} />
+              <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
             ))}
           </div>
         </section>
@@ -1544,7 +1550,7 @@ export default function App() {
           {/* Pista escondida en galería */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
             {getHintsForLocation('gallery', CONFIG.hiddenHints).map((h, i) => (
-              <HiddenHint key={i} hint={h} />
+              <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
             ))}
           </div>
         </section>
@@ -1636,12 +1642,12 @@ export default function App() {
               {/* Pista escondida en carta */}
               <div className="mt-3 flex justify-center">
                 {getHintsForLocation('letter', CONFIG.hiddenHints).map((h, i) => (
-                  <HiddenHint key={i} hint={h} />
+                  <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
                 ))}
               </div>
               
               {CONFIG.decorations.letterSeal && (
-                <LetterSeal cfg={CONFIG} onUnlock={() => navigateToSecret()} />
+                <LetterSeal cfg={CONFIG} onUnlock={() => navigateToSecret()} onDiscover={() => setHintsDiscovered(true)} />
               )}
             </div>
           </FadeInSection>
@@ -1682,7 +1688,7 @@ export default function App() {
           {/* Pista escondida en ruleta */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
             {getHintsForLocation('roulette', CONFIG.hiddenHints).map((h, i) => (
-              <HiddenHint key={i} hint={h} />
+              <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
             ))}
           </div>
         </section>
@@ -1715,7 +1721,7 @@ export default function App() {
           {/* Pista escondida en milestone */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
             {getHintsForLocation('milestone', CONFIG.hiddenHints).map((h, i) => (
-              <HiddenHint key={i} hint={h} />
+              <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
             ))}
           </div>
         </section>
@@ -1733,7 +1739,7 @@ export default function App() {
           {/* Pista escondida en footer */}
           <div className="mt-1">
             {getHintsForLocation('footer', CONFIG.hiddenHints).map((h, i) => (
-              <HiddenHint key={i} hint={h} />
+              <HiddenHint key={i} hint={h} visible={hintsDiscovered}/>
             ))}
           </div>
         </footer>
@@ -1771,3 +1777,4 @@ export default function App() {
     </>
   );
 }
+
