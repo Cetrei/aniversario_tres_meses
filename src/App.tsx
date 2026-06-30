@@ -1228,23 +1228,35 @@ function useIsSecretRoute(): boolean {
   return isSecret;
 }
 
+function RoseBlossom({ cx, cy, scale = 1, rotate = 0 }: { cx: number; cy: number; scale?: number; rotate?: number }) {
+  return (
+    <g transform={`translate(${cx} ${cy}) rotate(${rotate}) scale(${scale})`}>
+      <circle cx="0" cy="0" r="7.5" fill="#C97A8D" opacity="0.12" />
+      <path d="M0 0 C-4.5 -1.5 -5 -5.5 0 -8 C4.5 -5.5 4.5 -1.5 0 0Z" fill="#D98EA0" opacity="0.9" />
+      <path d="M0 0 C-4.5 -0.5 -6.5 -3.5 -4.5 -6.5 C-1.5 -4.5 0.5 -2 0 0Z" fill="#C97A8D" opacity="0.75" />
+      <path d="M0 0 C4.5 -0.5 6.5 -3.5 4.5 -6.5 C1.5 -4.5 -0.5 -2 0 0Z" fill="#E8A598" opacity="0.85" />
+      <path d="M0 0 C-3.5 2.5 -5.5 6 -3 8 C-1.5 4.5 -0.5 2 0 0Z" fill="#B05C72" opacity="0.65" />
+      <path d="M0 0 C3.5 2.5 5.5 6 3 8 C1.5 4.5 0.5 2 0 0Z" fill="#C97A8D" opacity="0.65" />
+      <circle cx="0" cy="-1" r="1.4" fill="#FBE3E8" opacity="0.55" />
+    </g>
+  );
+}
+
 function SecretPhotoFlourish({ flip }: { flip?: boolean }) {
   return (
-    <svg width="22" height="44" viewBox="0 0 22 44" aria-hidden="true" className="shrink-0"
+    <svg width="30" height="46" viewBox="0 0 30 46" aria-hidden="true" className="shrink-0"
       style={{ opacity: 0.55, transform: flip ? 'scaleX(-1)' : undefined }}>
-      {/* Tallo */}
-      <path d="M11 42 Q9 30 11 21" stroke="#6B5A4E" strokeWidth="1" fill="none" strokeLinecap="round" />
+      {/* Tallos */}
+      <path d="M15 44 Q13 32 15 23" stroke="#6B5A4E" strokeWidth="1" fill="none" strokeLinecap="round" />
+      <path d="M15 30 Q9 28 6 33" stroke="#6B5A4E" strokeWidth="0.8" fill="none" strokeLinecap="round" />
+      <path d="M15 26 Q21 24 24 29" stroke="#6B5A4E" strokeWidth="0.8" fill="none" strokeLinecap="round" />
       {/* Hojas */}
-      <path d="M11 33 Q5 31 3 26 Q9 27 11 33Z" fill="#8C7565" opacity="0.45" />
-      <path d="M11 27 Q17 25 19 20 Q13 21 11 27Z" fill="#8C7565" opacity="0.4" />
-      {/* Rosa: capas de pétalos en espiral */}
-      <circle cx="11" cy="10" r="7.5" fill="#C97A8D" opacity="0.12" />
-      <path d="M11 10 C6.5 8.5 6 4.5 11 2 C15.5 4.5 15.5 8.5 11 10Z" fill="#D98EA0" opacity="0.9" />
-      <path d="M11 10 C6.5 9.5 4.5 6.5 6.5 3.5 C9.5 5.5 11.5 8 11 10Z" fill="#C97A8D" opacity="0.75" />
-      <path d="M11 10 C15.5 9.5 17.5 6.5 15.5 3.5 C12.5 5.5 10.5 8 11 10Z" fill="#E8A598" opacity="0.85" />
-      <path d="M11 10 C7.5 12.5 5.5 16 8 18 C9.5 14.5 10.5 12 11 10Z" fill="#B05C72" opacity="0.65" />
-      <path d="M11 10 C14.5 12.5 16.5 16 14 18 C12.5 14.5 11.5 12 11 10Z" fill="#C97A8D" opacity="0.65" />
-      <circle cx="11" cy="9" r="1.4" fill="#FBE3E8" opacity="0.55" />
+      <path d="M15 35 Q9 33 7 28 Q13 29 15 35Z" fill="#8C7565" opacity="0.4" />
+      <path d="M15 38 Q21 36 23 31 Q17 32 15 38Z" fill="#8C7565" opacity="0.4" />
+      {/* Rosas en racimo */}
+      <RoseBlossom cx={15} cy={11} scale={1} />
+      <RoseBlossom cx={5} cy={33} scale={0.62} rotate={-12} />
+      <RoseBlossom cx={25} cy={29} scale={0.62} rotate={14} />
     </svg>
   );
 }
