@@ -269,7 +269,7 @@ export default function Timeline({ milestones, anniversaryDate }: TimelineProps)
       </div>
 
       <p className="text-[10px] sm:text-[11px] text-[#62464D] font-mono tracking-wide text-center max-w-sm px-6">
-        Esta línea seguirá creciendo con nosotros, hito tras hito, mientras dure nuestra historia.
+        Esta línea seguirá creciendo con nosotros, hito tras hito, durante toda nuestra historia.
       </p>
     </div>
   );

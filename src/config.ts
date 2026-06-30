@@ -615,17 +615,17 @@ export const CONFIG: CoupleConfig = {
   // Cada una apunta sutilmente a las fechas de cumpleaños o al acertijo
   hiddenHints: [
     // Hero - coordenadas sutiles
-    { id: "hero-1", text: "27° al norte, 2 minutos de espera", location: "hero", style: "coords" },
+    { id: "hero-1", text: "27° al norte, 2 segundos de espera", location: "hero", style: "coords" },
      // Árbol - acróstico con las fechas
     //{ id: "tree-1", text: "Vemos como todo florece en .Febrero. hasta que llega .Abril.", location: "tree", style: "acrostic" },
     // Smile slider - símbolos
-    { id: "smile-1", text: "↻ 2s · ↻ 5s · ↻ 2s: °? · °? · °?", location: "smile", style: "symbol" },
+    { id: "smile-1", text: "↻ El primero marca el rumbo - ⌛ El segundo marca la espera.", location: "smile", style: "symbol" },
     // Buseta - micro texto
     { id: "buseta-1", text: "Una familia patas arriba ↻", location: "buseta", style: "micro" },
     // Galería - coordenadas en caption-like
-    { id: "gallery-1", text: "Nuestro amor florece en .Marzo. y resplandece en .Agosto.", location: "gallery", style: "subtle" },
+    { id: "gallery-1", text: "Nuestro amor florece en ↻Marzo. y resplandece en ⌛Agosto.", location: "gallery", style: "subtle" },
     // Carta - acróstico visible
-    { id: "letter-1", text: "Juntos siempre, mi amor. Incluso al revés.", location: "letter", style: "acrostic" },
+    { id: "letter-1", text: "La historia comienza con quien nació primero", location: "letter", style: "acrostic" },
     // Ruleta - símbolos de ángulos
     { id: "roulette-1", text: "3 es un numero grandioso, no crees?", location: "roulette", style: "symbol" },
     // Milestone - micro
