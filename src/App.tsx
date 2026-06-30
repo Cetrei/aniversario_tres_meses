@@ -666,7 +666,7 @@ function getHintsForLocation(location: string, hints: typeof CONFIG.hiddenHints)
 }
 
 const INTRO_STEPS = [
-  { text: "Usa audifonos", sub: "💌", duration: 1200 },
+  { text: null, sub: "💌", duration: 1200 },
   { text: 'Para ti.', sub: null, duration: 1400 },
   { text: 'Que eres', sub: 'mi lugar favorito.', duration: 1600 },
   { text: getMonthNumber(getMonthsElapsed(CONFIG.anniversaryDate)) + ' meses', sub: 'de lo mejor.', duration: 1600 },
@@ -803,81 +803,69 @@ function AmbientLights() {
   );
 }
 
-function BackgroundMusicPlayer({ cfg }: { cfg: typeof CONFIG }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const hasAutoplayed = useRef(false);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = cfg.backgroundMusic.volume;
-    }
-  }, [cfg.backgroundMusic.volume]);
-
-  useEffect(() => {
-    if (!cfg.backgroundMusic.autoplay) return;
-
-    const tryPlay = () => {
-      if (hasAutoplayed.current) return;
-      const audio = audioRef.current;
-      if (!audio) return;
-      audio.play()
-        .then(() => { hasAutoplayed.current = true; setIsPlaying(true); })
-        .catch(() => {});
-    };
-
-    // Intenta de inmediato (funciona en wrangler/dev y browsers con autoplay permitido)
-    tryPlay();
-
-    // Fallback: primer gesto real del usuario (click en "Saltar", tap, tecla)
-    const handleFirstInteraction = () => {
-      tryPlay();
-      window.removeEventListener('click', handleFirstInteraction, true);
-      window.removeEventListener('touchend', handleFirstInteraction, true);
-      window.removeEventListener('keydown', handleFirstInteraction, true);
-    };
-
-    window.addEventListener('click', handleFirstInteraction, true);
-    window.addEventListener('touchend', handleFirstInteraction, true);
-    window.addEventListener('keydown', handleFirstInteraction, true);
-
-    return () => {
-      window.removeEventListener('click', handleFirstInteraction, true);
-      window.removeEventListener('touchend', handleFirstInteraction, true);
-      window.removeEventListener('keydown', handleFirstInteraction, true);
-    };
-  }, [cfg.backgroundMusic.autoplay]);
-
-  const toggle = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      audio.play().then(() => setIsPlaying(true)).catch(() => {});
-    }
-  };
-
-  if (!cfg.backgroundMusic.enabled || !cfg.backgroundMusic.src) return null;
-
+function StartScreen({ onStart }: { onStart: () => void }) {
   return (
-    <>
-      <audio ref={audioRef} src={cfg.backgroundMusic.src} loop preload="auto" />
-      <button type="button" onClick={toggle} aria-label={isPlaying ? 'Pausar música' : 'Reproducir música'}
-        className="fixed bottom-4 left-4 z-50 flex items-center justify-center w-9 h-9 rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white/80 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
-        {isPlaying ? (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <rect x="6" y="5" width="4" height="14" rx="1" />
-            <rect x="14" y="5" width="4" height="14" rx="1" />
+    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#0A0608]">
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        backgroundSize: '180px 180px',
+      }} />
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse 50% 40% at 50% 50%, rgba(232,165,152,0.06) 0%, transparent 70%)',
+      }} />
+      <div className="relative z-10 flex flex-col items-center gap-7">
+        <div style={{ opacity: 0.35 }}>
+          <svg width="44" height="44" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+            <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+            <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+            <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+            <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
           </svg>
-        ) : (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M7 5v14l11-7z" />
-          </svg>
-        )}
-      </button>
-    </>
+        </div>
+        <p className="text-2xl sm:text-3xl font-serif font-light text-[#FFFDFD] tracking-tight">¿Lista?</p>
+        <button
+          type="button"
+          onClick={onStart}
+          className="mt-1 px-10 py-3 rounded-full border border-[#E8A598]/35 text-[#E8A598] font-serif text-sm tracking-widest hover:bg-[#E8A598]/10 hover:border-[#E8A598]/60 active:scale-95 transition-all duration-300"
+        >
+          Comenzar
+        </button>
+        <p className="text-[9px] font-mono tracking-[0.3em] text-[#62464D] uppercase">Usa audifonos y sube el volumen 🎵</p>
+      </div>
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2" style={{ opacity: 0.18 }}>
+        <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+          <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+          <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+          <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+          <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function BackgroundMusicPlayer({ audioRef, isPlaying, onToggle }: {
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+  isPlaying: boolean;
+  onToggle: () => void;
+}) {
+  if (!CONFIG.backgroundMusic.enabled || !CONFIG.backgroundMusic.src) return null;
+  return (
+    <button type="button" onClick={onToggle} aria-label={isPlaying ? 'Pausar música' : 'Reproducir música'}
+      className="fixed bottom-4 left-4 z-50 flex items-center justify-center w-9 h-9 rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white/80 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
+      {isPlaying ? (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <rect x="6" y="5" width="4" height="14" rx="1" />
+          <rect x="14" y="5" width="4" height="14" rx="1" />
+        </svg>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M7 5v14l11-7z" />
+        </svg>
+      )}
+    </button>
   );
 }
 
@@ -1221,6 +1209,9 @@ function SecretPage({ cfg }: { cfg: typeof CONFIG }) {
 }
 
 export default function App() {
+  const [hasStarted, setHasStarted] = useState(false);
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [musicPlaying, setMusicPlaying] = useState(false);
   const [introComplete, setIntroComplete] = useState(false);
   const [contentVisible, setContentVisible] = useState(false);
   const [showGreetingPopup, setShowGreetingPopup] = useState(false);
@@ -1229,6 +1220,25 @@ export default function App() {
   const [dockTargetTop, setDockTargetTop] = useState<number | null>(null);
   const dockAnchorRef = useRef<HTMLParagraphElement>(null);
   const isSecretRoute = useIsSecretRoute();
+
+  const handleStart = useCallback(() => {
+    if (CONFIG.backgroundMusic.enabled && CONFIG.backgroundMusic.src && musicAudioRef.current) {
+      musicAudioRef.current.volume = CONFIG.backgroundMusic.volume;
+      musicAudioRef.current.play().then(() => setMusicPlaying(true)).catch(() => {});
+    }
+    setHasStarted(true);
+  }, []);
+
+  const handleMusicToggle = useCallback(() => {
+    const audio = musicAudioRef.current;
+    if (!audio) return;
+    if (musicPlaying) {
+      audio.pause();
+      setMusicPlaying(false);
+    } else {
+      audio.play().then(() => setMusicPlaying(true)).catch(() => {});
+    }
+  }, [musicPlaying]);
 
   const monthsElapsed = getMonthsElapsed(CONFIG.anniversaryDate);
   const hasReached3Months = monthsElapsed >= 3;
@@ -1272,6 +1282,11 @@ export default function App() {
 
   return (
     <>
+      {CONFIG.backgroundMusic.enabled && CONFIG.backgroundMusic.src && (
+        <audio ref={musicAudioRef} src={CONFIG.backgroundMusic.src} loop preload="auto"
+          onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} />
+      )}
+      {!hasStarted ? <StartScreen onStart={handleStart} /> : (<>
       {scrollBlocked && (
         <div 
           className="fixed inset-0 z-[60]"
@@ -1302,7 +1317,7 @@ export default function App() {
           opacity: contentVisible ? 1 : 0,
         }}>
         <AmbientLights />
-        <BackgroundMusicPlayer cfg={CONFIG} />
+        <BackgroundMusicPlayer audioRef={musicAudioRef} isPlaying={musicPlaying} onToggle={handleMusicToggle} />
         <SideDecoration side="left" />
         <SideDecoration side="right" />
 
@@ -1711,7 +1726,7 @@ export default function App() {
             © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
           </p>
           {CONFIG.easterEgg.enabled && CONFIG.easterEgg.hintText && (
-            <p className="text-[7px] text-[#4E313C]/70 tracking-widest uppercase font-mono font-light max-w-xs px-6 mt-0.5">
+            <p className="text-[7px] text-[#70535E]/70 tracking-widest uppercase font-mono font-light max-w-xs px-6 mt-0.5">
               {CONFIG.easterEgg.hintText}
             </p>
           )}
@@ -1752,6 +1767,7 @@ export default function App() {
           50% { opacity: 0.1; }
         }
       `}</style>
+      </>)}
     </>
   );
 }

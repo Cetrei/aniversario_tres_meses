@@ -556,10 +556,10 @@ export const CONFIG: CoupleConfig = {
 
   timelineMilestones: [
     { date: "2019-03-01", label: "Nos conocimos la primera vez" },
-    { date: "2022-05-01", label: "Empezamos a hablar" },
+    { date: "2022-04-01", label: "Empezamos a hablar" },
     { date: "2024-01-02", label: "Nos distanciamos" },
-    { date: "2025-04-01", label: "Volvimos a ser más cercanos" },
-    { date: "2026-04-1", label: "Empezamos como marinovios" },
+    { date: "2025-04-01", label: "Empezamos a acercanos otra vez" },
+    { date: "2026-04-1", label: "Nos convertimos en marinovios" },
   ],
 
   decorations: {
@@ -599,11 +599,12 @@ export const CONFIG: CoupleConfig = {
       { targetAngle: 27, holdSeconds: 2, toleranceDeg: 5, hintText: "La segunda el 27 del 2..." },
       { targetAngle: 180, holdSeconds: 2, toleranceDeg: 5, hintText: "Ahora al revés, como loquitos 🙃" },
     ],
-    hintText: "Hay algo que gira, no todo es lo que parece 🔎",
+    hintText: "Hay un secreto que gira, no todo es lo que parece 🔎",
     surpriseTitle: "Encontraste el secreto",
     surpriseMessage: [
       "Sabía que tarde o temprano lo ibas a encontrar, eres demasiado curiosa y observadora para dejarlo pasar.",
       "Este es un pequeño extra que quise dejar escondido solo para ti, como un secreto que solo nosotros dos compartimos.",
+      "Aprovecho para decirte, hice esta pagina con mucho amor con el fin de que la tengas de por vida, ire actualizando la inea del tiempo, el arbol crecera y nosotros nos amaremos cada dia más."
     ],
     surpriseImage: "/images/secreto.webp",
   },

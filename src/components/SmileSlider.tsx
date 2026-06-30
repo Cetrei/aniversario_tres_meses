@@ -116,7 +116,7 @@ export default function SmileSlider() {
         <div className="relative w-full h-8 flex items-center">
           <div className="absolute w-full h-[2px] bg-[#2D1C22] rounded-full" />
           <div
-            className="absolute h-[2px] bg-gradient-to-r from-[#62464D] to-[#E8A598] rounded-full pointer-events-none"
+            className="absolute h-[2px] bg-gradient-to-r from-[#3A2A30] to-[#B87A72] rounded-full pointer-events-none"
             style={fillStyle}
           />
           {TICK_POSITIONS.map((pos) => (
@@ -138,7 +138,6 @@ export default function SmileSlider() {
           />
         </div>
         
-        {/* TUS TEXTOS ORIGINALES RESTAURADOS EXACTAMENTE */}
         <div className="flex justify-between text-[9px] font-mono text-[#8C7565] tracking-widest">
           <span>DÍA AGITADO</span>
           <span>TU SONRISA</span>
