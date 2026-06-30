@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CONFIG } from './config';
 import FadeInSection from './components/FadeInSection';
+import Timeline from './components/Timeline';
 import SakuraTree from './components/SakuraTree';
 import SmileSlider from './components/SmileSlider';
 import Buseta from './components/Buseta';
@@ -170,36 +171,6 @@ function WaitingScreen({ startDate }: { startDate: string }) {
           <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
         </svg>
       </div>
-    </div>
-  );
-}
-
-// Línea de tiempo vertical en portada
-function CoverTimeline({ milestones }: { milestones: { date: string; label: string }[] }) {
-  // Usa la fecha más antigua de los hitos como origen para que todos quepan en el span
-  const firstMs = milestones.reduce(
-    (min, m) => Math.min(min, new Date(m.date).getTime()),
-    new Date(CONFIG.anniversaryDate).getTime(),
-  );
-  const totalSpan = Date.now() - firstMs;
-
-  return (
-    <div className="hidden lg:flex flex-col items-center absolute right-[-120px] xl:right-[-150px] top-1/2 -translate-y-1/2 h-[70%] max-h-[360px] w-[80px]">
-      <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-[#4E313C]/25 to-transparent" />
-      {milestones.map((m, i) => {
-        const mDate = new Date(m.date);
-        const elapsed = mDate.getTime() - firstMs;
-        const position = Math.max(0, Math.min(1, elapsed / totalSpan));
-        const isPast = mDate.getTime() <= Date.now();
-        return (
-          <div key={i} className="absolute flex items-center gap-2" style={{ top: `${position * 100}%`, transform: 'translateY(-50%)' }}>
-            <div className={`w-[5px] h-[5px] rounded-full ${isPast ? 'bg-[#E8A598]/40' : 'bg-[#4E313C]/30'}`} />
-            <span className={`text-[7px] font-mono tracking-[0.2em] uppercase whitespace-nowrap ${isPast ? 'text-[#8C7565]/60' : 'text-[#4E313C]/40'}`}>
-              {mDate.getFullYear() + " " + m.label}
-            </span>
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -502,7 +473,7 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
       setTimeout(() => setStep((s) => s + 1), 500);
     }, duration);
     return () => clearTimeout(hideTimer);
-  }, [step, onDone, onReveal]);
+  }, [step, onDone, onReveal, introTransitionMs]);
 
   useEffect(() => {
     const skipTimer = setTimeout(() => setSkipVisible(true), 900);
@@ -557,6 +528,30 @@ function CinematicIntro({ onReveal, onDone, introTransitionMs }: { onReveal: () 
         style={{ opacity: skipVisible && !leaving ? 1 : 0, transition: 'opacity 0.8s ease, color 0.3s ease' }}>
         Saltar →
       </button>
+    </div>
+  );
+}
+
+// Saludo flotante grande que aparece justo después de la intro (no bloquea la carga
+// de la página: el contenido principal ya está montado/visible debajo). Se encoge
+// y sube hasta quedar como una etiqueta pequeña permanente, anclada justo encima
+// del bloque "Felices X meses" de la Sección 0.
+function GreetingPopup({ text, shrink }: { text: string; shrink: boolean }) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-start justify-center pointer-events-none px-8" aria-hidden="true">
+      <p
+        className="font-serif font-light text-[#E8A598] text-center select-none"
+        style={{
+          marginTop: shrink ? '84px' : '42vh',
+          fontSize: shrink ? '10px' : 'clamp(28px, 6vw, 48px)',
+          letterSpacing: shrink ? '0.3em' : '0px',
+          textTransform: shrink ? 'uppercase' : 'none',
+          opacity: shrink ? 0.85 : 1,
+          transition: 'margin-top 900ms cubic-bezier(0.4,0,0.2,1), font-size 900ms cubic-bezier(0.4,0,0.2,1), letter-spacing 900ms ease, opacity 900ms ease',
+        }}
+      >
+        {text}
+      </p>
     </div>
   );
 }
@@ -665,6 +660,36 @@ function SideDecoration({ side }: { side: 'left' | 'right' }) {
         ))}
       </svg>
     </div>
+  );
+}
+
+// Sección compacta del contador hacia el próximo hito (mes/año), separada del
+// footer legal. Vive como su propia sección al final del recorrido, igual que
+// Buseta o el árbol Sakura, pero deliberadamente pequeña y poco voluminosa.
+function NextMilestoneSection({ anniversaryDate }: { anniversaryDate: string }) {
+  const { daysLeft, nextLabel } = getNextMilestone(anniversaryDate);
+  if (daysLeft <= 0) return null;
+  return (
+    <section className="w-full min-h-[42vh] sm:min-h-[38vh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden py-10">
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 45% 50% at 50% 50%, rgba(232,165,152,0.08) 0%, transparent 70%)' }} />
+      <FadeInSection direction="up" delay={0}>
+        <div className="flex flex-col items-center gap-2.5 px-8 sm:px-10 py-6 rounded-2xl border border-[#4E313C]/30 bg-[#1C1216]/40 backdrop-blur-sm">
+          <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" style={{ opacity: 0.55 }}>
+            <path d="M16,2 C16,2 18,9 16,16 C14,9 16,2 16,2Z" fill="#E8A598" />
+            <path d="M16,30 C16,30 14,23 16,16 C18,23 16,30 16,30Z" fill="#E8A598" />
+            <path d="M2,16 C2,16 9,14 16,16 C9,18 2,16 2,16Z" fill="#E8A598" />
+            <path d="M30,16 C30,16 23,18 16,16 C23,14 30,16 30,16Z" fill="#E8A598" />
+            <circle cx="16" cy="16" r="3" fill="#FFFDFD" opacity="0.6" />
+          </svg>
+          <span className="text-[8px] font-mono tracking-widest text-[#62464D] uppercase">Próximo capítulo</span>
+          <p className="text-3xl sm:text-4xl font-serif font-bold text-[#FFFDFD] leading-none">{daysLeft}</p>
+          <p className="text-xs sm:text-sm font-serif italic text-[#E8A598]">
+            {daysLeft === 1 ? 'día' : 'días'} para los {nextLabel}
+          </p>
+        </div>
+      </FadeInSection>
+    </section>
   );
 }
 
@@ -928,10 +953,31 @@ function SecretPage({ cfg }: { cfg: typeof CONFIG }) {
 export default function App() {
   const [introComplete, setIntroComplete] = useState(false);
   const [contentVisible, setContentVisible] = useState(false);
+  const [showGreetingPopup, setShowGreetingPopup] = useState(false);
+  const [greetingShrink, setGreetingShrink] = useState(false);
+  const [greetingDocked, setGreetingDocked] = useState(false);
   const isSecretRoute = useIsSecretRoute();
 
   const monthsElapsed = getMonthsElapsed(CONFIG.anniversaryDate);
   const hasReached3Months = monthsElapsed >= 3;
+  const greetingText = CONFIG.greetings.enabled ? getTimeOfDayGreeting(CONFIG) : null;
+
+  // El saludo aparece grande justo después de que termina la intro, sin bloquear
+  // el montaje/carga del resto de la página (que ya está visible debajo). Luego
+  // se encoge y queda fijo como etiqueta pequeña sobre el "Felices X meses".
+  useEffect(() => {
+    if (!introComplete || !greetingText) return;
+    setShowGreetingPopup(true);
+    const shrinkTimer = setTimeout(() => setGreetingShrink(true), 1300);
+    const dockTimer = setTimeout(() => {
+      setShowGreetingPopup(false);
+      setGreetingDocked(true);
+    }, 1300 + 900);
+    return () => {
+      clearTimeout(shrinkTimer);
+      clearTimeout(dockTimer);
+    };
+  }, [introComplete, greetingText]);
 
   if (!hasReached3Months) {
     return <WaitingScreen startDate={CONFIG.anniversaryDate} />;
@@ -949,6 +995,10 @@ export default function App() {
           onDone={() => setIntroComplete(true)}
           introTransitionMs={CONFIG.timing.introTransitionMs}
         />
+      )}
+
+      {showGreetingPopup && greetingText && (
+        <GreetingPopup text={greetingText} shrink={greetingShrink} />
       )}
 
       <div className="w-full h-[100dvh] overflow-y-auto snap-y snap-mandatory scroll-smooth bg-[#130D0F] text-[#EDE7E5] font-serif hide-scrollbar relative"
@@ -995,19 +1045,16 @@ export default function App() {
           </svg>
 
           <div className="relative z-10 flex flex-col items-center text-center gap-5 max-w-lg">
+            {greetingDocked && greetingText && (
+              <p className="text-[10px] sm:text-[11px] font-mono tracking-[0.3em] text-[#E8A598]/80 uppercase greeting-dock-in">
+                {greetingText}
+              </p>
+            )}
             <FadeInSection direction="up" delay={100}>
               <span className="text-[9px] font-mono tracking-[0.35em] text-[#62464D] uppercase block">
                 {new Date(CONFIG.anniversaryDate).toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })}
               </span>
             </FadeInSection>
-
-            {CONFIG.greetings.enabled && (
-              <FadeInSection direction="up" delay={180}>
-                <span className="text-[#E8A598] text-xs sm:text-sm italic font-light tracking-wide block">
-                  {getTimeOfDayGreeting(CONFIG)}
-                </span>
-              </FadeInSection>
-            )}
 
             <FadeInSection direction="up" delay={260}>
               <div className="space-y-1 relative">
@@ -1018,9 +1065,6 @@ export default function App() {
                 <p className="text-2xl sm:text-3xl font-serif font-light text-[#E8A598] tracking-wide">
                   {getMonthLabel(getMonthsElapsed(CONFIG.anniversaryDate))}
                 </p>
-                {CONFIG.decorations.coverTimeline && (
-                  <CoverTimeline milestones={CONFIG.timelineMilestones} />
-                )}
               </div>
             </FadeInSection>
 
@@ -1050,6 +1094,17 @@ export default function App() {
             </FadeInSection>
           </div>
         </section>
+
+        {/* SECCIÓN: Línea de tiempo de la relación — antes del árbol, pensada para crecer con los años */}
+        {CONFIG.decorations.coverTimeline && (
+          <section className="w-full h-[100dvh] flex flex-col items-center justify-center shrink-0 snap-start snap-always px-4 relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse 60% 45% at 50% 50%, rgba(232,165,152,0.07) 0%, transparent 70%)' }} />
+            <FadeInSection direction="up" delay={0} className="w-full flex justify-center">
+              <Timeline milestones={CONFIG.timelineMilestones} anniversaryDate={CONFIG.anniversaryDate} />
+            </FadeInSection>
+          </section>
+        )}
 
         {/* SECCIÓN 1: Árbol Sakura */}
         <section className="w-full h-[100dvh] flex flex-col items-center justify-start shrink-0 snap-start snap-always px-4 relative overflow-hidden pt-16 sm:pt-20">
@@ -1259,17 +1314,10 @@ export default function App() {
           </div>
         </section>
 
+        <NextMilestoneSection anniversaryDate={CONFIG.anniversaryDate} />
+
         <footer className="w-full min-h-[64px] flex flex-col items-center justify-center text-center gap-1.5 shrink-0 snap-start snap-always bg-[#130D0F] py-3"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          {(() => {
-            const { daysLeft, nextLabel } = getNextMilestone(CONFIG.anniversaryDate);
-            if (daysLeft <= 0) return null;
-            return (
-              <p className="text-[9px] text-[#8C7565] tracking-widest uppercase font-mono font-light">
-                Faltan {daysLeft} {daysLeft === 1 ? 'día' : 'días'} para los {nextLabel}
-              </p>
-            );
-          })()}
           <p className="text-[8px] text-[#6E4752] tracking-widest uppercase font-mono font-light">
             © {new Date().getFullYear()} {CONFIG.names.from} y {CONFIG.names.to}
           </p>
@@ -1294,6 +1342,17 @@ export default function App() {
         @keyframes spin-slow-reverse {
           from { transform: rotate(360deg); }
           to { transform: rotate(0deg); }
+        }
+        @keyframes bob-down {
+          0%, 100% { transform: translateY(0); opacity: 0.5; }
+          50% { transform: translateY(6px); opacity: 1; }
+        }
+        @keyframes greeting-dock-in {
+          0% { opacity: 0; transform: translateY(-6px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .greeting-dock-in {
+          animation: greeting-dock-in 700ms cubic-bezier(0.4,0,0.2,1) both;
         }
       `}</style>
     </>

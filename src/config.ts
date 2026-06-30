@@ -223,7 +223,7 @@ export interface EasterEggConfig {
 }
 
 export interface DecorationsConfig {
-  /** Línea de tiempo vertical sutil junto al número grande de la portada (Sección 0). Se oculta en móvil/tablet (solo lg+) para no estorbar ni gastar render en pantallas chicas. */
+  /** Sección dedicada a la línea de tiempo de la relación, ubicada antes del árbol Sakura. Pensada para crecer con el tiempo a medida que se agregan hitos. */
   coverTimeline: boolean;
   /** Capa de estrellas + glow rosado detrás del canvas del árbol (Sección 1). El parpadeo de las estrellas solo se anima en escritorio (md+); en móvil quedan fijas. */
   treeConstellation: boolean;
